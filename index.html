@@ -2,21 +2,24 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Vector Space Runner - Arcade Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
             overflow: hidden;
             background-color: #050505;
             color: #0f0;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Press Start 2P', cursive;
             user-select: none;
+            touch-action: none;
         }
         canvas {
             display: block;
         }
-        /* Efecto de pantalla CRT y Scanlines */
         #crt-overlay {
             position: absolute;
             top: 0;
@@ -31,6 +34,7 @@
             opacity: 0.4;
             box-shadow: inset 0 0 100px rgba(0,255,0,0.1);
         }
+        
         #ui-layer {
             position: absolute;
             top: 20px;
@@ -39,14 +43,34 @@
             z-index: 20;
             display: flex;
             justify-content: space-between;
-            font-size: 24px;
+            font-size: 12px;
             font-weight: bold;
-            text-shadow: 0 0 10px #0f0;
             pointer-events: none;
+            line-height: 1.8;
         }
+        
+        .hud-box {
+            background: rgba(0, 15, 0, 0.85);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 3px solid;
+            min-width: 160px;
+            backdrop-filter: blur(4px);
+        }
+        .border-cyan { 
+            border-color: #0ff; 
+            box-shadow: inset 0 0 15px rgba(0,255,255,0.2), 0 0 15px rgba(0,255,255,0.4); 
+            text-shadow: 0 0 10px #0ff;
+        }
+        .border-green { 
+            border-color: #0f0; 
+            box-shadow: inset 0 0 15px rgba(0,255,0,0.2), 0 0 15px rgba(0,255,0,0.4); 
+            text-shadow: 0 0 10px #0f0;
+        }
+        
         .ui-block { display: flex; flex-direction: column; }
         
-        #start-screen, #game-over-screen {
+        #start-screen, #game-over-screen, #victory-screen {
             position: absolute;
             top: 0;
             left: 0;
@@ -57,17 +81,116 @@
             justify-content: center;
             align-items: center;
             z-index: 30;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 5, 0, 0.85);
             text-shadow: 0 0 15px #0f0;
+            backdrop-filter: blur(5px);
         }
+
+        .panel {
+            background: rgba(0, 10, 0, 0.9);
+            border: 4px solid #0ff;
+            padding: 50px;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 800px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .title-glitch {
+            font-size: 40px;
+            margin-bottom: 10px;
+            color: #fff;
+            text-shadow: 4px 4px 0px #f00, -4px -4px 0px #0ff, 0 0 30px #fff;
+            letter-spacing: 2px;
+            line-height: 1.2;
+        }
+
         .hidden { display: none !important; }
-        .blink { animation: blinker 1s linear infinite; }
-        @keyframes blinker { 50% { opacity: 0; } }
+        .blink { animation: blinker 1s steps(2, start) infinite; }
+        @keyframes blinker { to { visibility: hidden; } }
         
         .red-text { color: #f00; text-shadow: 0 0 10px #f00; }
         .white-text { color: #fff; text-shadow: 0 0 10px #fff; }
         .cyan-text { color: #0ff; text-shadow: 0 0 10px #0ff; }
         .yellow-text { color: #ff0; text-shadow: 0 0 10px #ff0; }
+        
+        .start-btn {
+            margin-top: 30px;
+            cursor: pointer;
+            padding: 20px 40px;
+            background: #0ff;
+            color: #000;
+            border: none;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 20px;
+            box-shadow: 0 0 20px #0ff;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+        .start-btn:hover {
+            background: #fff;
+            box-shadow: 0 0 40px #fff;
+            transform: scale(1.05);
+        }
+        .start-btn:active { transform: scale(0.95); }
+
+        /* Controles Móviles */
+        #mobile-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            width: 100%;
+            pointer-events: none;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30px;
+            box-sizing: border-box;
+            z-index: 50;
+        }
+        .m-zone { pointer-events: auto; }
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-gap: 5px;
+        }
+        .m-btn {
+            background: rgba(0, 255, 255, 0.15);
+            border: 2px solid #0ff;
+            color: #0ff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            height: 60px;
+            user-select: none;
+            touch-action: none;
+            box-shadow: inset 0 0 10px rgba(0,255,255,0.2);
+        }
+        .m-btn:active { background: rgba(0, 255, 255, 0.5); box-shadow: 0 0 15px #0ff; }
+        .action-btns { display: flex; gap: 15px; align-items: flex-end; }
+        
+        .btn-fire { 
+            width: 80px; height: 80px; border-radius: 50%; 
+            border-color: #f0f; color: #f0f; background: rgba(255, 0, 255, 0.15); 
+            font-size: 10px; box-shadow: inset 0 0 10px rgba(255,0,255,0.2);
+        }
+        .btn-fire:active { background: rgba(255, 0, 255, 0.5); box-shadow: 0 0 15px #f0f; }
+        
+        .btn-emp { 
+            width: 60px; height: 60px; border-radius: 50%; 
+            border-color: #ff0; color: #ff0; background: rgba(255, 255, 0, 0.15); 
+            font-size: 10px; box-shadow: inset 0 0 10px rgba(255,255,0,0.2);
+        }
+        .btn-emp:active { background: rgba(255, 255, 0, 0.5); box-shadow: 0 0 15px #ff0; }
+
+        @media (min-width: 1024px) {
+            #mobile-controls { display: none !important; }
+        }
+
     </style>
 </head>
 <body>
@@ -75,251 +198,285 @@
     <div id="crt-overlay"></div>
 
     <div id="ui-layer" class="hidden">
-        <div class="ui-block">
-            <div>PUNTOS: <span id="score">0</span></div>
-            <div id="combo-display" class="yellow-text" style="font-size: 18px;"></div>
+        <div class="ui-block hud-box border-cyan">
+            <div class="cyan-text">SCORE: <span id="score" class="white-text">0</span></div>
+            <div id="combo-display" class="yellow-text" style="font-size: 10px; margin-top: 8px;"></div>
+            <div id="level-display" class="cyan-text" style="margin-top: 10px; font-size: 10px;">SECTOR: 1</div>
         </div>
-        <div class="ui-block" style="text-align: right;">
-            <div>ENERGÍA: <span id="hp">100</span>%</div>
-            <div class="cyan-text" style="font-size: 18px;">EMP (TECLA B): <span id="emp-count">3</span></div>
+        <div class="ui-block" style="text-align: center; padding-top: 10px;">
+            <div id="warning-text" class="red-text blink hidden" style="font-size: 24px;">WARNING</div>
+            <div id="warp-text" class="cyan-text blink hidden" style="font-size: 24px;">WARP SPEED</div>
+        </div>
+        <div class="ui-block hud-box border-green" style="text-align: right;">
+            <div class="cyan-text">SHIELD: <span id="hp" class="white-text">100</span>%</div>
+            <div class="cyan-text" style="margin-top: 15px; font-size: 10px;">EMP (B): <span id="emp-count" class="white-text">3</span></div>
+        </div>
+    </div>
+
+    <!-- Controles para Celular -->
+    <div id="mobile-controls" class="hidden">
+        <div class="m-zone d-pad">
+            <div></div><div class="m-btn" id="btn-up">▲</div><div></div>
+            <div class="m-btn" id="btn-left">◀</div><div class="m-btn" id="btn-down">▼</div><div class="m-btn" id="btn-right">▶</div>
+        </div>
+        <div class="m-zone action-btns">
+            <div class="m-btn btn-emp" id="btn-m-emp">EMP</div>
+            <div class="m-btn btn-fire" id="btn-m-fire">FIRE</div>
         </div>
     </div>
 
     <div id="start-screen">
-        <h1 class="white-text" style="font-size: 48px; margin-bottom: 10px;">VECTOR RUNNER</h1>
-        <p style="font-size: 20px; margin-bottom: 30px; text-align: center;">
-            WASD / Flechas - Moverse<br>
-            SHIFT - Esquive Rápido<br>
-            ESPACIO - Disparar<br>
-            B - Bomba EMP<br><br>
-            Destruye enemigos sin recibir daño para subir el Multiplicador.
-        </p>
-        <h2 class="blink" style="margin-bottom: 20px; cursor:pointer;">HAZ CLIC PARA INICIAR</h2>
-        <p class="white-text" style="font-size: 18px;">Mejor Puntuación: <span id="high-score-start">0</span></p>
+        <div class="panel">
+            <h1 class="title-glitch">VECTOR RUNNER</h1>
+            <h2 class="cyan-text" style="font-size: 16px; margin-top: 0; margin-bottom: 30px; letter-spacing: 5px;">ARCADE OVERDRIVE</h2>
+            
+            <div style="border: 2px dashed #0f0; padding: 25px; margin-bottom: 20px; background: rgba(0,255,0,0.05); text-align: left;">
+                <p style="font-size: 12px; margin: 0; line-height: 2.5; color: #aaa;">
+                    <span class="yellow-text">WASD / D-PAD :</span> MOVERSE<br>
+                    <span class="yellow-text">SHIFT        :</span> ESQUIVAR<br>
+                    <span class="yellow-text">ESPACIO/FIRE :</span> DISPARAR<br>
+                    <span class="yellow-text">TECLA B/EMP  :</span> BOMBA EMP
+                </p>
+            </div>
+
+            <button class="start-btn blink" id="start-btn">INSERT COIN</button>
+            <p class="cyan-text" style="font-size: 14px; margin-top: 40px;">HI-SCORE: <span class="white-text" id="high-score-start">0</span></p>
+        </div>
     </div>
 
     <div id="game-over-screen" class="hidden">
-        <h1 class="red-text" style="font-size: 64px;">SYSTEM FAILURE</h1>
-        <p style="font-size: 24px;">Puntuación Final: <span id="final-score">0</span></p>
-        <p class="white-text" style="font-size: 20px;">Mejor Puntuación: <span id="high-score-end">0</span></p>
-        <h2 class="blink" style="margin-top: 30px; cursor:pointer;" onclick="location.reload()">CLIC PARA REINICIAR</h2>
+        <div class="panel" style="border-color: #f00; box-shadow: 0 0 50px rgba(255, 0, 0, 0.4), inset 0 0 20px rgba(255, 0, 0, 0.2);">
+            <h1 class="red-text title-glitch" style="text-shadow: 4px 4px 0px #f0f, 0 0 30px #f00; margin: 0;">GAME OVER</h1>
+            <p style="font-size: 16px; margin-top: 40px; color: #aaa;">FINAL SCORE</p>
+            <p class="white-text" style="font-size: 30px; margin-top: 10px;"><span id="final-score">0</span></p>
+            <button class="start-btn" style="background: #f00; color: #fff; box-shadow: 0 0 20px #f00; margin-top: 40px;" onclick="location.reload()">CONTINUE?</button>
+        </div>
+    </div>
+
+    <div id="victory-screen" class="hidden">
+        <div class="panel" style="border-color: #0ff; box-shadow: 0 0 50px rgba(0, 255, 255, 0.4), inset 0 0 20px rgba(0, 255, 255, 0.2);">
+            <h1 class="cyan-text title-glitch" style="text-shadow: 4px 4px 0px #00f, 0 0 30px #0ff; margin: 0;">SYSTEM PURGED</h1>
+            <h2 class="white-text" style="margin-top: 20px; font-size: 16px; line-height: 1.5;">CYBERSPACE<br>SAVED!</h2>
+            <p style="font-size: 16px; margin-top: 40px; color: #aaa;">FINAL SCORE</p>
+            <p class="white-text" style="font-size: 30px; margin-top: 10px;"><span id="victory-score">0</span></p>
+            <button class="start-btn" onclick="location.reload()">PLAY AGAIN</button>
+        </div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
 <script>
 /**
- * SISTEMA DE VOCES (SpeechSynthesis)
+ * PUNTUACIÓN (Guardado Local)
+ */
+const Meta = {
+    highScore: parseInt(localStorage.getItem('vsr_highScore_arcade')) || 0,
+    save(score) {
+        if (score > this.highScore) {
+            this.highScore = score;
+            localStorage.setItem('vsr_highScore_arcade', this.highScore);
+        }
+    }
+};
+
+/**
+ * SISTEMAS DE AUDIO Y VOZ
  */
 const VoiceSys = {
     speak: (text) => {
         if (!window.speechSynthesis) return;
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-US'; // Voz retro en inglés
-        utterance.pitch = 0.6;
-        utterance.rate = 1.1;
-        utterance.volume = 0.8;
-        window.speechSynthesis.speak(utterance);
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US'; u.pitch = 0.5; u.rate = 1.1; u.volume = 0.7;
+        window.speechSynthesis.speak(u);
     }
 };
 
-/**
- * SISTEMA DE AUDIO (Synthwave Procedural y SFX)
- */
 const AudioSys = (function() {
-    let ctx = null;
-    let masterGain = null;
-    let isPlaying = false;
-    let time = 0;
+    let ctx = null, masterGain = null, isPlaying = false, time = 0;
     
     function init() {
         if (ctx) return;
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        ctx = new AudioContext();
-        masterGain = ctx.createGain();
-        masterGain.gain.value = 0.3;
-        masterGain.connect(ctx.destination);
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = ctx.createGain(); masterGain.gain.value = 0.3; masterGain.connect(ctx.destination);
     }
 
     function playTone(freq, type, duration, vol, detune=0, slideTo=null) {
         if(!ctx) return;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        const osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
         if(slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, ctx.currentTime + duration);
-        osc.detune.value = detune;
-        
-        gain.gain.setValueAtTime(vol, ctx.currentTime);
+        osc.detune.value = detune; gain.gain.setValueAtTime(vol, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
-        
-        osc.connect(gain);
-        gain.connect(masterGain);
-        osc.start();
-        osc.stop(ctx.currentTime + duration);
+        osc.connect(gain); gain.connect(masterGain); osc.start(); osc.stop(ctx.currentTime + duration);
     }
 
     function noiseBurst(duration, vol) {
         if(!ctx) return;
-        const bufferSize = ctx.sampleRate * duration;
-        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-        
-        const noise = ctx.createBufferSource();
-        noise.buffer = buffer;
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 1000;
-        const gain = ctx.createGain();
-        
-        gain.gain.setValueAtTime(vol, ctx.currentTime);
+        const bSize = ctx.sampleRate * duration, buffer = ctx.createBuffer(1, bSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0); for(let i=0; i<bSize; i++) data[i] = Math.random()*2-1;
+        const noise = ctx.createBufferSource(); noise.buffer = buffer;
+        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 800;
+        const gain = ctx.createGain(); gain.gain.setValueAtTime(vol, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
-        
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(masterGain);
-        noise.start();
+        noise.connect(filter); filter.connect(gain); gain.connect(masterGain); noise.start();
     }
 
     const sfx = {
-        shoot: () => playTone(600, 'square', 0.1, 0.5, 0, 200),
-        enemyShoot: () => playTone(300, 'sawtooth', 0.15, 0.4, 0, 100),
-        hit: () => noiseBurst(0.2, 0.8),
-        explosion: () => { noiseBurst(0.5, 1.0); playTone(100, 'square', 0.5, 0.8, 0, 50); },
-        emp: () => { noiseBurst(1.5, 1.5); playTone(800, 'sine', 1.5, 1.0, 0, 50); },
-        score: () => { playTone(880, 'sine', 0.1, 0.3); setTimeout(() => playTone(1760, 'sine', 0.2, 0.3), 100); },
-        damage: () => playTone(150, 'sawtooth', 0.3, 0.8, 0, 50),
-        powerup: () => { playTone(440, 'square', 0.1, 0.4, 0, 880); setTimeout(() => playTone(880, 'square', 0.2, 0.4, 0, 1760), 100); }
+        shoot: () => playTone(300, 'sine', 0.15, 0.4, 0, 150),
+        enemyShoot: () => playTone(400, 'triangle', 0.2, 0.2, 0, 200),
+        hit: () => noiseBurst(0.15, 0.4),
+        explosion: () => { noiseBurst(0.4, 0.6); playTone(100, 'sine', 0.5, 0.7, 0, 50); },
+        emp: () => { noiseBurst(1.0, 0.8); playTone(600, 'sine', 1.0, 0.8, 0, 50); },
+        score: () => { playTone(880, 'sine', 0.1, 0.2); setTimeout(() => playTone(1760, 'sine', 0.2, 0.2), 100); },
+        damage: () => playTone(150, 'sawtooth', 0.3, 0.6, 0, 50),
+        powerup: () => { playTone(440, 'sine', 0.15, 0.4, 0, 880); setTimeout(() => playTone(880, 'sine', 0.2, 0.4, 0, 1760), 100); },
+        bossDefeat: () => { noiseBurst(3.0, 0.8); playTone(80, 'sawtooth', 3.0, 0.8, 0, 20); },
+        warp: () => { playTone(50, 'sine', 5.0, 1.0, 0, 1200); noiseBurst(5.0, 0.3); }
     };
 
     function musicLoop() {
         if(!isPlaying || !ctx) return;
         const beat = time % 16;
         const isBoss = Game.boss && Game.boss.active;
+        const isWarp = Game.warpTimer > 0;
         
-        if (beat % 2 === 0) playTone(isBoss ? 40 : 55, 'sawtooth', 0.2, 0.4);
-        if (beat % 4 === 0) { playTone(150, 'sine', 0.1, 0.6, 0, 40); noiseBurst(0.05, 0.3); }
+        let tempo = isWarp ? 150 : 250; 
+        
+        if (beat % 8 === 0) {
+            playTone(isBoss ? 40 : (Game.level===2 ? 45 : 50), 'sine', 1.5, 0.5);
+            playTone(isBoss ? 40.5 : (Game.level===2 ? 45.5 : 50.5), 'triangle', 1.5, 0.3);
+        }
+        
+        if (beat % 4 === 0) { noiseBurst(0.08, 0.15); }
 
-        const notes = isBoss ? [200, 250, 300, 250] : [220, 277, 330, 440, 330, 277];
-        const note = notes[beat % notes.length];
-        if (beat % 1 === 0) playTone(note, 'square', 0.1, 0.1);
+        const notesL1 = [220, 330, 440, 330];
+        const notesL2 = [200, 300, 360, 300];
+        const notesL3 = [150, 250, 350, 250];
+        const bossNotes = [150, 140, 130, 140];
+        
+        let notes = isBoss ? bossNotes : (Game.level===1?notesL1:(Game.level===2?notesL2:notesL3));
+        
+        if (beat % 2 === 0) {
+            let freq = notes[(beat/2) % notes.length];
+            playTone(freq, 'triangle', 0.8, 0.2);
+            playTone(freq * 1.01, 'sine', 0.8, 0.15);
+        }
 
-        time++;
-        setTimeout(musicLoop, 120);
+        time++; setTimeout(musicLoop, tempo);
     }
 
     return { init, sfx, startMusic: () => { isPlaying = true; musicLoop(); }, stopMusic: () => isPlaying = false };
 })();
 
 /**
- * MOTOR DEL JUEGO
+ * MOTOR DEL JUEGO Y GRÁFICOS 3D
  */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 let width, height, halfWidth, halfHeight;
 function resize() {
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
-    halfWidth = width / 2;
-    halfHeight = height / 2;
+    width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight;
+    halfWidth = width / 2; halfHeight = height / 2;
 }
-window.addEventListener('resize', resize);
-resize();
+window.addEventListener('resize', resize); resize();
 
-// Constantes 3D
-const FOV = 300;
-const Z_LIMIT = 2000;
-const CAMERA_Y = -100;
-const SPEED = 16;
+const FOV = 300, Z_LIMIT = 2000, CAMERA_Y = -100;
+let BASE_SPEED = 12, SPEED = 12; 
 
-// Variables globales
-let gameLoopId;
-let frames = 0;
-let score = 0;
-let highScore = localStorage.getItem('vectorRunnerHighScore') || 0;
-let difficulty = 1;
-let screenShake = 0;
-let combo = 0;
-let multiplier = 1;
-let emps = 3;
-let nextBossScore = 1000; // Variable para espaciar a los jefes
+let gameLoopId, frames = 0, score = 0, difficulty = 1;
+let screenShake = 0, combo = 0, multiplier = 1, emps = 3, nextBossScore = 2000;
 
 const Game = {
-    state: 'START',
-    entities: [],
-    particles: [],
-    bullets: [],
-    powerups: [],
-    boss: null
+    state: 'START', level: 1, warpTimer: 0, flashAlpha: 0, bossDeathTimer: 0, playerDeathTimer: 0,
+    entities: [], particles: [], bullets: [], powerups: [], boss: null
 };
 
-// Controles
-const keys = { w:false, a:false, s:false, d:false, space:false, up:false, down:false, left:false, right:false, shift:false, b:false };
+// Controles de Teclado
+const keys = { w:false, a:false, s:false, d:false, space:false, shift:false, b:false };
 window.addEventListener('keydown', e => {
-    if(e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = true;
-    if(e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = true;
-    if(e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = true;
-    if(e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = true;
-    if(e.code === 'Space') { keys.space = true; e.preventDefault(); }
-    if(e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.shift = true;
-    if(e.code === 'KeyB') { keys.b = true; EMP.trigger(); }
+    if(e.code==='KeyW'||e.code==='ArrowUp') keys.w = true; if(e.code==='KeyA'||e.code==='ArrowLeft') keys.a = true;
+    if(e.code==='KeyS'||e.code==='ArrowDown') keys.s = true; if(e.code==='KeyD'||e.code==='ArrowRight') keys.d = true;
+    if(e.code==='Space') { keys.space = true; e.preventDefault(); }
+    if(e.code==='ShiftLeft'||e.code==='ShiftRight') keys.shift = true;
+    if(e.code==='KeyB') { keys.b = true; EMP.trigger(); }
 });
 window.addEventListener('keyup', e => {
-    if(e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = false;
-    if(e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = false;
-    if(e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = false;
-    if(e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = false;
-    if(e.code === 'Space') keys.space = false;
-    if(e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.shift = false;
-    if(e.code === 'KeyB') keys.b = false;
+    if(e.code==='KeyW'||e.code==='ArrowUp') keys.w = false; if(e.code==='KeyA'||e.code==='ArrowLeft') keys.a = false;
+    if(e.code==='KeyS'||e.code==='ArrowDown') keys.s = false; if(e.code==='KeyD'||e.code==='ArrowRight') keys.d = false;
+    if(e.code==='Space') keys.space = false; if(e.code==='ShiftLeft'||e.code==='ShiftRight') keys.shift = false;
+    if(e.code==='KeyB') keys.b = false;
 });
 
+// Controles Táctiles (Mobile)
+const bindTouch = (id, keyName) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
+    el.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
+    el.addEventListener('touchcancel', (e) => { e.preventDefault(); keys[keyName] = false; });
+};
+
+bindTouch('btn-up', 'w');
+bindTouch('btn-down', 's');
+bindTouch('btn-left', 'a');
+bindTouch('btn-right', 'd');
+bindTouch('btn-m-fire', 'space');
+const empBtn = document.getElementById('btn-m-emp');
+if (empBtn) {
+    empBtn.addEventListener('touchstart', (e) => { e.preventDefault(); EMP.trigger(); });
+}
+
 function project(x, y, z) {
-    if (z === -FOV) z = -FOV + 0.1;
+    if (z <= -FOV) z = -FOV + 0.1;
     const scale = FOV / (FOV + z);
     return { x: x * scale + halfWidth, y: (y - CAMERA_Y) * scale + halfHeight, s: scale };
 }
 
-// SUPER ARMA EMP
+// EMP SUPER WEAPON
 const EMP = {
-    active: false,
-    radius: 0,
+    active: false, radius: 0,
     trigger() {
-        if (emps <= 0 || this.active || Game.state !== 'PLAYING') return;
-        emps--;
-        document.getElementById('emp-count').innerText = emps;
-        this.active = true;
-        this.radius = 10;
-        VoiceSys.speak("EMP Deployed");
-        AudioSys.sfx.emp();
-        screenShake = 40;
+        if (emps <= 0 || this.active || Game.state !== 'PLAYING' || player.isDying) return;
+        emps--; document.getElementById('emp-count').innerText = emps;
+        this.active = true; this.radius = 10; VoiceSys.speak("EMP Deployed");
+        AudioSys.sfx.emp(); screenShake = 40;
         
-        Game.entities.forEach(e => {
-            if (e.hp) { e.hp -= 200; e.hitTimer = 15; if (e.hp <= 0 && e.destroy) e.destroy(); }
-        });
+        Game.entities.forEach(e => { if (e.hp) { e.hp -= 400; e.hitTimer = 15; if (e.hp <= 0 && e.destroy) e.destroy(); }});
         Game.bullets.forEach(b => { if(!b.isPlayer) b.active = false; });
-        
-        if (Game.boss && Game.boss.active) {
-            Game.boss.hp -= 400;
-            Game.boss.segments.forEach(s => s.hitTimer = 15);
-        }
+        if (Game.boss && Game.boss.active && !Game.boss.isDying) { Game.boss.hp -= 500; if(Game.boss.hp <= 0) triggerBossDeath(Game.boss); }
     },
     updateAndDraw(ctx) {
         if(!this.active) return;
-        this.radius += 60; // Expansión rápida
-        ctx.strokeStyle = `rgba(0, 255, 255, ${Math.max(0, 1 - this.radius/2500)})`;
-        ctx.lineWidth = 15;
-        ctx.beginPath();
-        ctx.arc(halfWidth, halfHeight, this.radius, 0, Math.PI*2);
-        ctx.stroke();
-        if(this.radius > 2500) this.active = false;
+        this.radius += 80;
+        ctx.strokeStyle = `rgba(0, 255, 255, ${Math.max(0, 1 - this.radius/3000)})`;
+        ctx.lineWidth = 15; ctx.beginPath(); ctx.arc(halfWidth, halfHeight, this.radius, 0, Math.PI*2); ctx.stroke();
+        if(this.radius > 3000) this.active = false;
     }
 };
 
-const Mountains = {
+const WarpTunnel = {
+    rings: [],
+    updateAndDraw(ctx) {
+        if (Game.warpTimer <= 0) { this.rings = []; return; }
+        if (frames % 4 === 0) this.rings.push({ z: Z_LIMIT });
+        
+        ctx.shadowBlur = 30; ctx.shadowColor = '#0ff';
+        this.rings.forEach(r => {
+            r.z -= SPEED * 1.5;
+            let p = project(0, 0, r.z);
+            if (p.z >= -FOV && p.s > 0) {
+                ctx.strokeStyle = `rgba(0, 255, 255, ${Math.min(1, r.z / Z_LIMIT)})`;
+                ctx.lineWidth = 8 * p.s; ctx.beginPath(); ctx.arc(p.x, p.y, 800 * p.s, 0, Math.PI*2); ctx.stroke();
+            }
+        });
+        this.rings = this.rings.filter(r => r.z > -FOV);
+        ctx.shadowBlur = 0;
+    }
+};
+
+const Env = {
     left: [], right: [],
     init() {
         this.left = []; this.right = [];
@@ -329,27 +486,56 @@ const Mountains = {
         }
     },
     updateAndDraw(ctx) {
-        ctx.strokeStyle = (Game.boss && Game.boss.active) ? '#a00' : '#0a0';
-        ctx.lineWidth = 2;
-        const moveZ = SPEED;
+        if (Game.level === 3) return;
+
+        let color = Game.level === 1 ? '#0a0' : '#0ff'; 
+        if (Game.boss && Game.boss.active) color = '#a00';
+        if (Game.warpTimer > 0) color = '#fff';
+
+        ctx.strokeStyle = color; ctx.lineWidth = 2;
         const processSide = (arr, xOffset) => {
-            ctx.beginPath();
-            let first = true;
+            ctx.beginPath(); let first = true;
             for(let i=0; i<arr.length; i++) {
-                arr[i].z -= moveZ;
-                let dynamicY = arr[i].y + Math.sin(frames*0.05 + i)*50; 
+                if (!player.isDying) arr[i].z -= SPEED;
+                let dynamicY = arr[i].y;
+                if (Game.level === 1 && !player.isDying) dynamicY += Math.sin(frames*0.05 + i)*50; 
+                
                 if (arr[i].z < -FOV) { arr[i].z += 20 * 150; arr[i].y = Math.random() * -300 - 100; }
                 if (arr[i].z > -FOV) {
                     let p = project(xOffset, dynamicY, arr[i].z);
-                    if (first) { ctx.moveTo(p.x, p.y); first = false; } else { ctx.lineTo(p.x, p.y); }
-                    let base = project(xOffset, 0, arr[i].z);
-                    ctx.lineTo(base.x, base.y); ctx.moveTo(p.x, p.y);
+                    if (Game.level === 1) { 
+                        if (first) { ctx.moveTo(p.x, p.y); first = false; } else { ctx.lineTo(p.x, p.y); }
+                        let base = project(xOffset, 0, arr[i].z);
+                        ctx.lineTo(base.x, base.y); ctx.moveTo(p.x, p.y);
+                    } else if (Game.level === 2) {
+                        let base = project(xOffset, 0, arr[i].z);
+                        let wOffset = xOffset < 0 ? 150 : -150;
+                        let pWidth = project(xOffset + wOffset, dynamicY, arr[i].z);
+                        let baseWidth = project(xOffset + wOffset, 0, arr[i].z);
+                        ctx.moveTo(p.x, p.y); ctx.lineTo(pWidth.x, pWidth.y);
+                        ctx.lineTo(baseWidth.x, baseWidth.y); ctx.lineTo(base.x, base.y); ctx.lineTo(p.x, p.y);
+                    }
                 }
             }
             ctx.stroke();
         };
-        processSide(this.left, -800);
-        processSide(this.right, 800);
+        processSide(this.left, -800); processSide(this.right, 800);
+
+        ctx.strokeStyle = Game.level===1 ? '#030' : '#033';
+        if (Game.boss && Game.boss.active) ctx.strokeStyle = '#300';
+        if (Game.warpTimer > 0) ctx.strokeStyle = '#555';
+        ctx.lineWidth = 1;
+        
+        const gridSize = 200; const offset = player.isDying ? 0 : (frames * SPEED) % gridSize;
+        for (let z = 0; z < Z_LIMIT; z += gridSize) {
+            let actualZ = z - offset; if (actualZ < -FOV) continue;
+            let pL = project(-2000, 0, actualZ); let pR = project(2000, 0, actualZ);
+            ctx.beginPath(); ctx.moveTo(pL.x, pL.y); ctx.lineTo(pR.x, pR.y); ctx.stroke();
+        }
+        for (let x = -2000; x <= 2000; x += 300) {
+            let pN = project(x, 0, -FOV+10); let pF = project(x, 0, Z_LIMIT);
+            ctx.beginPath(); ctx.moveTo(pN.x, pN.y); ctx.lineTo(pF.x, pF.y); ctx.stroke();
+        }
     }
 };
 
@@ -357,50 +543,92 @@ const Stars = {
     particles: [],
     init() {
         this.particles = [];
-        for(let i=0; i<150; i++) this.particles.push({x: (Math.random()-0.5)*3000, y: (Math.random()-0.5)*2000, z: Math.random()*Z_LIMIT});
+        // Aumentado a 400 estrellas para un fondo más denso
+        for(let i=0; i<400; i++) this.particles.push({x: (Math.random()-0.5)*3000, y: (Math.random()-0.5)*2000, z: Math.random()*Z_LIMIT});
     },
     updateAndDraw(ctx) {
-        ctx.fillStyle = (Game.boss && Game.boss.active) ? '#faa' : '#fff';
+        let color = '#fff';
+        if (Game.level === 3) color = (frames % 10 < 5) ? '#f0f' : '#0ff';
+        if (Game.boss && Game.boss.active) color = '#faa';
+
         this.particles.forEach(s => {
-            s.z -= SPEED * 3;
+            let currentSpeed = SPEED * (Game.warpTimer > 0 ? 4 : 1.5);
+            if (!player || !player.isDying) s.z -= currentSpeed;
+            
             if (s.z < -FOV) { s.z = Z_LIMIT; s.x = (Math.random()-0.5)*3000; s.y = (Math.random()-0.5)*2000; }
             let p = project(s.x, s.y, s.z);
+            
             if (p.z >= -FOV && p.s > 0) {
-                ctx.globalAlpha = Math.min(1, (1 - s.z/Z_LIMIT));
-                ctx.fillRect(p.x, p.y, 2*p.s, 2*p.s);
+                ctx.globalAlpha = Math.max(0.1, Math.min(1, (1 - s.z/Z_LIMIT)));
+                
+                // Las estrellas ahora se dibujan como líneas alargadas para dar efecto de velocidad (Starfield)
+                let p2 = project(s.x, s.y, s.z + currentSpeed * 2);
+                ctx.strokeStyle = color; 
+                ctx.lineWidth = Math.max(0.5, 2 * p.s);
+                ctx.beginPath(); 
+                ctx.moveTo(p.x, p.y); 
+                ctx.lineTo(p2.x, p2.y); 
+                ctx.stroke();
             }
         });
         ctx.globalAlpha = 1.0;
     }
 };
 
-/**
- * CLASES DE ENTIDADES
- */
+class Bullet {
+    constructor(x, y, z, isPlayer, vx = 0, vy = 0) {
+        this.x = x; this.y = y; this.z = z; this.vx = vx; this.vy = vy;
+        this.isPlayer = isPlayer; this.vz = isPlayer ? 120 : -60;
+        this.active = true;
+    }
+    update() {
+        if (player.isDying) return; 
+        this.z += this.vz; this.x += this.vx; this.y += this.vy;
+        if (this.z > Z_LIMIT || this.z < -FOV) this.active = false;
+        if (!this.isPlayer && this.active && !Game.warpTimer) {
+            if (Math.abs(this.z - player.z) < 50 && Math.abs(this.x - player.x) < player.radius && Math.abs(this.y - player.y) < player.radius) {
+                player.takeDamage(10); this.active = false;
+            }
+        }
+    }
+    draw(ctx) {
+        let p = project(this.x, this.y, this.z);
+        if (p.z < -FOV) return;
+        
+        ctx.fillStyle = this.isPlayer ? '#0ff' : '#f0f';
+        ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle;
+        
+        ctx.beginPath();
+        if (this.vx !== 0) {
+            ctx.ellipse(p.x, p.y, 6*p.s, 6*p.s, 0, 0, Math.PI*2);
+        } else {
+            ctx.ellipse(p.x, p.y, 3*p.s, 18*p.s, 0, 0, Math.PI*2);
+        }
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+}
+
 class Player {
     constructor() {
-        this.x = 0; this.y = -50; this.z = 100;
-        this.vx = 0; this.vy = 0;
-        this.hp = 100;
-        this.lastShot = 0;
-        this.color = '#fff';
-        this.radius = 35;
-        this.dashCooldown = 0;
-        this.weaponLevel = 1;
-        this.weaponTimer = 0;
-        this.hitTimer = 0;
-        this.trails = [];
+        this.x = 0; this.y = -50; this.z = 100; this.vx = 0; this.vy = 0;
+        this.hp = 100; this.maxHp = 100;
+        this.lastShot = 0; this.radius = 35; this.dashCooldown = 0;
+        this.weaponLevel = 1; this.weaponTimer = 0; this.hitTimer = 0;
+        this.isDying = false; // Rastro defectuoso eliminado
     }
-
     update() {
+        if (this.isDying || Game.warpTimer > 0) {
+            this.x *= 0.9; this.y += (-100 - this.y) * 0.1;
+            return; 
+        }
+
         if (this.hitTimer > 0) this.hitTimer--;
+        const accel = 4.5, fric = 0.85, maxSpeed = 35;
 
-        const accel = 3.0; const fric = 0.85; const maxSpeed = 25;
-
-        // Esquive
         if (keys.shift && this.dashCooldown <= 0) {
-            if (keys.a) { this.vx -= 60; this.dashCooldown = 40; createParticles(this.x, this.y, this.z, '#0ff', 15); }
-            else if (keys.d) { this.vx += 60; this.dashCooldown = 40; createParticles(this.x, this.y, this.z, '#0ff', 15); }
+            if (keys.a) { this.vx -= 80; this.dashCooldown = 30; createParticles(this.x, this.y, this.z, '#0ff', 15); }
+            else if (keys.d) { this.vx += 80; this.dashCooldown = 30; createParticles(this.x, this.y, this.z, '#0ff', 15); }
         }
         if (this.dashCooldown > 0) this.dashCooldown--;
 
@@ -415,23 +643,14 @@ class Player {
         this.vx *= fric; this.vy *= fric;
         this.vx = Math.max(-maxSpeed, Math.min(maxSpeed, this.vx));
         this.vy = Math.max(-maxSpeed, Math.min(maxSpeed, this.vy));
-
         this.x += this.vx; this.y += this.vy;
 
         if (this.x < -600) this.x = -600; if (this.x > 600) this.x = 600;
-        if (this.y > 0) this.y = 0; if (this.y < -500) this.y = -500;
+        if (this.y > 100) this.y = 100; if (this.y < -500) this.y = -500;
 
-        // Historial de Rastro (Trails)
-        for(let t of this.trails) {
-            t.z += SPEED * 1.5; // Hace que la estela retroceda visualmente en el 3D
-        }
-        this.trails.push({x: this.x, y: this.y, z: this.z});
-        if(this.trails.length > 15) this.trails.shift();
-
-        let fireRate = this.weaponLevel > 1 ? 5 : 10;
+        let fireRate = this.weaponLevel > 1 ? 5 : 8;
         if (keys.space && frames - this.lastShot > fireRate) this.shoot();
     }
-
     shoot() {
         AudioSys.sfx.shoot();
         if (this.weaponLevel === 1) {
@@ -441,491 +660,425 @@ class Player {
             Game.bullets.push(new Bullet(this.x - 25, this.y, this.z, true));
             Game.bullets.push(new Bullet(this.x, this.y, this.z, true));
             Game.bullets.push(new Bullet(this.x + 25, this.y, this.z, true));
+            Game.bullets.push(new Bullet(this.x, this.y, this.z, true, -15));
+            Game.bullets.push(new Bullet(this.x, this.y, this.z, true, 15));
         }
         this.lastShot = frames;
     }
-
     takeDamage(amount) {
-        this.hp -= amount;
-        this.hitTimer = 15;
-        screenShake = 20;
-        resetCombo(); // ROMPE EL COMBO
-        VoiceSys.speak("Warning, Damage taken");
-        AudioSys.sfx.damage();
+        if (this.isDying) return;
+        this.hp -= amount; this.hitTimer = 15; screenShake = 20; resetCombo();
+        VoiceSys.speak("Shield Damage"); AudioSys.sfx.damage();
         createParticles(this.x, this.y, this.z, '#f00', 15, 'line');
-        createParticles(this.x, this.y, this.z, '#fff', 5, 'dot');
-        document.getElementById('hp').innerText = this.hp;
-        if (this.hp <= 0) endGame();
+        document.getElementById('hp').innerText = Math.max(0, this.hp);
+        
+        if (this.hp <= 0) {
+            this.hp = 0;
+            this.isDying = true;
+            Game.playerDeathTimer = 120; // Destrucción épica
+            AudioSys.sfx.bossDefeat(); 
+            VoiceSys.speak("CRITICAL SYSTEM FAILURE");
+        }
     }
-
     draw(ctx) {
         let p = project(this.x, this.y, this.z);
         if (p.z < -FOV) return;
         let size = this.radius * p.s;
 
-        // RASTRO (Trails)
-        ctx.lineWidth = 4;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = '#0ff';
-        
-        const drawTrail = (offsetX, offsetY) => {
-            for(let i=1; i<this.trails.length; i++) {
-                let t1 = this.trails[i-1];
-                let t2 = this.trails[i];
-                let pt1 = project(t1.x + offsetX, t1.y + offsetY, t1.z);
-                let pt2 = project(t2.x + offsetX, t2.y + offsetY, t2.z);
-                
-                if(pt1.z >= -FOV && pt2.z >= -FOV) {
-                    ctx.beginPath();
-                    // Dibuja segmento por segmento para lograr el efecto de desvanecimiento
-                    ctx.strokeStyle = `rgba(0, 255, 255, ${i / this.trails.length})`;
-                    ctx.moveTo(pt1.x, pt1.y);
-                    ctx.lineTo(pt2.x, pt2.y);
-                    ctx.stroke();
-                }
-            }
-        };
-        drawTrail(-35, 10); // Ala izquierda
-        drawTrail(35, 10);  // Ala derecha
+        // Parpadear al morir
+        if (this.isDying && frames % 4 < 2) return;
 
-        // NAVE
-        ctx.strokeStyle = this.hitTimer > 0 ? '#f00' : this.color;
-        ctx.lineWidth = 2;
-        ctx.shadowBlur = this.hitTimer > 0 ? 20 : 10;
-        ctx.shadowColor = ctx.strokeStyle;
+        // --- ESTELA VECTORIAL GEOMÉTRICA (100% visible) ---
+        if (!this.isDying && Game.state === 'PLAYING') {
+            let thrust = size * (0.5 + Math.random() * 0.8); // Longitud variable del fuego (parpadeo)
+            
+            ctx.strokeStyle = '#0ff';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#0ff';
+
+            // Fuego Ala Izquierda (con forma de ala invertida)
+            ctx.beginPath();
+            ctx.moveTo(p.x - size * 0.5, p.y + size * 0.8);
+            ctx.lineTo(p.x - size * 1.5, p.y + size * 0.6);
+            ctx.lineTo(p.x - size * 1.0, p.y + size * 0.6 + thrust);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Fuego Ala Derecha
+            ctx.beginPath();
+            ctx.moveTo(p.x + size * 0.5, p.y + size * 0.8);
+            ctx.lineTo(p.x + size * 1.5, p.y + size * 0.6);
+            ctx.lineTo(p.x + size * 1.0, p.y + size * 0.6 + thrust);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Fuego Central Principal
+            ctx.beginPath();
+            ctx.moveTo(p.x - size * 0.3, p.y + size * 0.65);
+            ctx.lineTo(p.x + size * 0.3, p.y + size * 0.65);
+            ctx.lineTo(p.x, p.y + size * 0.65 + thrust * 1.5);
+            ctx.closePath();
+            ctx.stroke();
+
+            ctx.shadowBlur = 0;
+        }
+        // -----------------------------------------------------
+
+        ctx.strokeStyle = this.hitTimer > 0 || this.isDying ? '#f00' : '#fff';
+        ctx.lineWidth = 2; ctx.shadowBlur = this.hitTimer > 0 ? 20 : 10; ctx.shadowColor = ctx.strokeStyle;
 
         ctx.beginPath();
-        ctx.moveTo(p.x, p.y - size * 1.5); // Nariz
+        ctx.moveTo(p.x, p.y - size * 1.5); 
         ctx.lineTo(p.x + size * 0.4, p.y + size * 0.2);
-        ctx.lineTo(p.x + size * 1.5, p.y + size * 0.6); // Ala
+        ctx.lineTo(p.x + size * 1.5, p.y + size * 0.6); 
         ctx.lineTo(p.x + size * 0.5, p.y + size * 0.8);
-        ctx.lineTo(p.x, p.y + size * 0.5); // Cola
+        ctx.lineTo(p.x, p.y + size * 0.5); 
         ctx.lineTo(p.x - size * 0.5, p.y + size * 0.8);
-        ctx.lineTo(p.x - size * 1.5, p.y + size * 0.6); // Ala
+        ctx.lineTo(p.x - size * 1.5, p.y + size * 0.6); 
         ctx.lineTo(p.x - size * 0.4, p.y + size * 0.2);
-        ctx.closePath();
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y - size * 1.5); ctx.lineTo(p.x, p.y + size * 0.5);
-        ctx.moveTo(p.x - size * 0.4, p.y + size * 0.2); ctx.lineTo(p.x + size * 0.4, p.y + size * 0.2);
-        ctx.stroke();
+        ctx.closePath(); ctx.stroke();
 
         ctx.fillStyle = (frames % 4 < 2) ? '#0ff' : '#00f';
-        ctx.shadowBlur = 15; ctx.shadowColor = '#0ff';
+        if (this.isDying) ctx.fillStyle = '#f00';
+        ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle;
         ctx.beginPath();
         ctx.arc(p.x - size * 0.3, p.y + size * 0.8, 4*p.s, 0, Math.PI*2);
         ctx.arc(p.x + size * 0.3, p.y + size * 0.8, 4*p.s, 0, Math.PI*2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-    }
-}
-
-class Bullet {
-    constructor(x, y, z, isPlayer) {
-        this.x = x; this.y = y; this.z = z;
-        this.isPlayer = isPlayer;
-        this.vz = isPlayer ? 100 : -50;
-        this.active = true;
-    }
-    update() {
-        this.z += this.vz;
-        if (this.z > Z_LIMIT || this.z < -FOV) this.active = false;
-        if (!this.isPlayer && this.active) {
-            if (Math.abs(this.z - player.z) < 50 && Math.abs(this.x - player.x) < player.radius && Math.abs(this.y - player.y) < player.radius) {
-                player.takeDamage(10);
-                this.active = false;
-            }
-        }
-    }
-    draw(ctx) {
-        let p = project(this.x, this.y, this.z);
-        if (p.z < -FOV) return;
-        ctx.fillStyle = this.isPlayer ? '#0ff' : '#f00';
-        ctx.shadowBlur = 5; ctx.shadowColor = ctx.fillStyle;
-        ctx.fillRect(p.x - 2*p.s, p.y - 10*p.s, 4*p.s, 20*p.s);
-        ctx.shadowBlur = 0;
+        ctx.fill(); ctx.shadowBlur = 0;
     }
 }
 
 class Enemy {
     constructor(x, y, z) {
-        this.x = x; this.y = y; this.z = z;
-        this.active = true;
-        this.hp = 20; this.radius = 60;
-        this.lastShot = frames + Math.random()*60;
+        this.x = x; this.y = y; this.z = z; this.active = true;
+        this.hp = 20 * Game.level; 
+        this.radius = 60;
         this.hitTimer = 0;
+        this.lastShot = frames + Math.random()*60;
     }
     update() {
+        if (player.isDying) return; 
         if (this.hitTimer > 0) this.hitTimer--;
         this.z -= SPEED * 1.1;
         this.x += Math.sin(frames*0.05 + this.z)*8; this.y += Math.cos(frames*0.04)*4;
         if (this.z < -FOV) this.active = false;
 
+        for (let b of Game.bullets) {
+            if (b.isPlayer && b.active) {
+                if (Math.abs(b.z - this.z) < 150 && Math.abs(b.x - this.x) < (this.radius * 2) && Math.abs(b.y - this.y) < (this.radius * 2.5)) {
+                    this.hp -= 15; this.hitTimer = 5; b.active = false;
+                    if (this.hp <= 0) { this.destroy(); return; }
+                }
+            }
+        }
+
+        if (this.active && Math.abs(this.z - player.z) < 100 && Math.abs(this.x - player.x) < (this.radius + player.radius) && Math.abs(this.y - player.y) < (this.radius + player.radius + 20)) {
+            player.takeDamage(20); this.destroy(); return;
+        }
+
         if (frames > this.lastShot && this.z > player.z + 100) {
             AudioSys.sfx.enemyShoot();
             Game.bullets.push(new Bullet(this.x, this.y, this.z, false));
-            this.lastShot = frames + 60 + Math.random()*60;
+            this.lastShot = frames + Math.max(30, 80 - (Game.level * 10));
         }
-
-        bulletCollision(this);
-        playerCollision(this, 20);
     }
     destroy() {
         this.active = false; screenShake = 5; AudioSys.sfx.explosion();
         createParticles(this.x, this.y, this.z, '#f00', 15, 'line');
-        createParticles(this.x, this.y, this.z, '#ff0', 10, 'dot');
         addComboScore(50);
     }
     draw(ctx) {
         let p = project(this.x, this.y, this.z);
         if (p.z < -FOV) return;
-        let pulse = 1 + 0.2 * Math.sin(frames * 0.1);
-        let s = this.radius * p.s * pulse;
+        let s = this.radius * p.s;
 
         ctx.strokeStyle = this.hitTimer > 0 ? '#fff' : '#f00';
-        ctx.lineWidth = 2; ctx.shadowBlur = this.hitTimer > 0 ? 30 : 15; ctx.shadowColor = ctx.strokeStyle;
-        
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y - s); ctx.lineTo(p.x + s, p.y); ctx.lineTo(p.x, p.y + s); ctx.lineTo(p.x - s, p.y);
-        ctx.closePath(); ctx.stroke();
-        
-        ctx.fillStyle = '#ff0'; ctx.beginPath(); ctx.arc(p.x, p.y, s*0.3, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 0;
-    }
-}
-
-class Kamikaze {
-    constructor(x, y, z) {
-        this.x = x; this.y = y; this.z = z;
-        this.active = true; this.hp = 15; this.radius = 40; this.hitTimer = 0;
-    }
-    update() {
-        if (this.hitTimer > 0) this.hitTimer--;
-        this.z -= SPEED * 2.5; // Muy rápido
-        this.x += (player.x - this.x) * 0.04; // Sigue al jugador
-        this.y += (player.y - this.y) * 0.04;
-        
-        if (this.z < -FOV) this.active = false;
-        bulletCollision(this); playerCollision(this, 25);
-    }
-    destroy() {
-        this.active = false; screenShake = 8; AudioSys.sfx.explosion();
-        createParticles(this.x, this.y, this.z, '#fa0', 20, 'line');
-        addComboScore(80);
-    }
-    draw(ctx) {
-        let p = project(this.x, this.y, this.z);
-        if (p.z < -FOV) return;
-        let s = this.radius * p.s;
-
-        ctx.strokeStyle = this.hitTimer > 0 ? '#fff' : '#fa0';
-        ctx.lineWidth = 2; ctx.shadowBlur = 10; ctx.shadowColor = ctx.strokeStyle;
-        
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y + s); ctx.lineTo(p.x - s, p.y - s); ctx.lineTo(p.x + s, p.y - s);
-        ctx.closePath(); ctx.stroke();
-        ctx.shadowBlur = 0;
-    }
-}
-
-class Mine {
-    constructor(x, y, z) {
-        this.x = x; this.y = y; this.z = z;
-        this.active = true; this.hp = 30; this.radius = 50; this.hitTimer = 0;
-    }
-    update() {
-        if (this.hitTimer > 0) this.hitTimer--;
-        this.z -= SPEED; // Estática en X/Y
-        if (this.z < -FOV) this.active = false;
-        bulletCollision(this); playerCollision(this, 30);
-    }
-    destroy() {
-        this.active = false; screenShake = 15; AudioSys.sfx.explosion();
-        createParticles(this.x, this.y, this.z, '#f0f', 25, 'line');
-        addComboScore(60);
-    }
-    draw(ctx) {
-        let p = project(this.x, this.y, this.z);
-        if (p.z < -FOV) return;
-        let pulse = 1 + 0.3 * Math.sin(frames * 0.2);
-        let s = this.radius * p.s * pulse;
-
-        ctx.strokeStyle = this.hitTimer > 0 ? '#fff' : '#f0f';
         ctx.lineWidth = 2; ctx.shadowBlur = 15; ctx.shadowColor = ctx.strokeStyle;
         
-        ctx.beginPath(); ctx.arc(p.x, p.y, s, 0, Math.PI*2); ctx.stroke();
-        
-        // Pinchos
-        for(let i=0; i<8; i++) {
-            let angle = (i/8) * Math.PI*2 + frames*0.05;
-            ctx.beginPath();
-            ctx.moveTo(p.x + Math.cos(angle)*s, p.y + Math.sin(angle)*s);
-            ctx.lineTo(p.x + Math.cos(angle)*(s*1.5), p.y + Math.sin(angle)*(s*1.5));
-            ctx.stroke();
-        }
-        ctx.shadowBlur = 0;
+        ctx.beginPath(); ctx.moveTo(p.x, p.y - s); ctx.lineTo(p.x + s, p.y); ctx.lineTo(p.x, p.y + s); ctx.lineTo(p.x - s, p.y);
+        ctx.closePath(); ctx.stroke(); ctx.shadowBlur = 0;
     }
 }
 
-class Asteroid {
-    constructor(x, y, z, sizeTier = 2) {
-        this.x = x; this.y = y; this.z = z;
-        this.sizeTier = sizeTier; // 2 = grande, 1 = pequeño
-        this.active = true; this.hp = sizeTier * 20; this.radius = sizeTier * 50; this.hitTimer = 0;
-        this.verts = [];
-        for(let i=0; i<8; i++) this.verts.push(Math.random() * 0.5 + 0.5); // polígono deforme
-        this.rot = Math.random() * Math.PI;
-    }
-    update() {
-        if (this.hitTimer > 0) this.hitTimer--;
-        this.z -= SPEED;
-        this.rot += 0.02;
-        if (this.z < -FOV) this.active = false;
-        bulletCollision(this); playerCollision(this, 15 * this.sizeTier);
-    }
-    destroy() {
-        this.active = false; screenShake = 8; AudioSys.sfx.explosion();
-        createParticles(this.x, this.y, this.z, '#aaa', 15, 'line');
-        
-        if (this.sizeTier > 1) {
-            // Se parte en dos
-            Game.entities.push(new Asteroid(this.x - 60, this.y, this.z, 1));
-            Game.entities.push(new Asteroid(this.x + 60, this.y, this.z, 1));
-        } else {
-            addComboScore(40);
-        }
-    }
-    draw(ctx) {
-        let p = project(this.x, this.y, this.z);
-        if (p.z < -FOV) return;
-        let s = this.radius * p.s;
-
-        ctx.strokeStyle = this.hitTimer > 0 ? '#fff' : '#aaa';
-        ctx.lineWidth = 2; ctx.shadowBlur = 5; ctx.shadowColor = ctx.strokeStyle;
-        
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(this.rot);
-        ctx.beginPath();
-        for(let i=0; i<8; i++) {
-            let a = (i/8) * Math.PI*2;
-            let r = s * this.verts[i];
-            if(i===0) ctx.moveTo(Math.cos(a)*r, Math.sin(a)*r);
-            else ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
-        }
-        ctx.closePath(); ctx.stroke();
-        ctx.restore();
-        ctx.shadowBlur = 0;
-    }
-}
-
-// Funciones Auxiliares de Colisión
-function bulletCollision(entity) {
-    for (let b of Game.bullets) {
-        if (b.isPlayer && b.active && Math.abs(b.z - entity.z) < 50) {
-            let hitArea = entity.radius * 1.8;
-            if (Math.abs(b.x - entity.x) < hitArea && Math.abs(b.y - entity.y) < hitArea) {
-                entity.hp -= 10; entity.hitTimer = 5; b.active = false;
-                createParticles(b.x, b.y, b.z, '#fff', 5, 'dot');
-                if (entity.hp <= 0) entity.destroy();
-            }
-        }
-    }
-}
-function playerCollision(entity, damage) {
-    if (entity.active && Math.abs(entity.z - player.z) < 30) {
-        if (Math.abs(entity.x - player.x) < (entity.radius + player.radius) &&
-            Math.abs(entity.y - player.y) < (entity.radius + player.radius)) {
-            player.takeDamage(damage);
-            entity.destroy();
-        }
-    }
-}
-
-class Torii {
-    constructor(x, z) {
-        this.x = x; this.y = 0; this.z = z; this.active = true;
-        this.width = 300; this.height = 250; this.passed = false;
-        this.hp = 100; this.hitTimer = 0;
-    }
-    update() {
-        if (this.hitTimer > 0) this.hitTimer--;
-        this.z -= SPEED;
-        if (this.z < -FOV) this.active = false;
-
-        if (this.active && !this.passed && this.z < player.z && this.z > player.z - SPEED*2) {
-            this.passed = true;
-            if (Math.abs(player.x - this.x) < this.width/2 - 20 && player.y > -this.height && player.y <= 0) {
-                addComboScore(200); AudioSys.sfx.score();
-                createParticles(this.x, -this.height/2, this.z, '#0f0', 30);
-            } else if (Math.abs(player.x - this.x) < this.width/2 + 30 && player.y > -this.height - 20) {
-                player.takeDamage(15);
-            }
-        }
-
-        for (let b of Game.bullets) {
-            if (b.isPlayer && b.active && Math.abs(b.z - this.z) < 50) {
-                if ((Math.abs(b.x - (this.x - this.width/2)) < 30 || Math.abs(b.x - (this.x + this.width/2)) < 30) && b.y > -this.height && b.y <= 0) {
-                    this.hp -= 20; this.hitTimer = 5; b.active = false;
-                    createParticles(b.x, b.y, b.z, '#fff', 5, 'dot');
-                    if (this.hp <= 0) this.destroy();
-                }
-            }
-        }
-    }
-    destroy() {
-        this.active = false; screenShake = 10; AudioSys.sfx.explosion();
-        createParticles(this.x - this.width/2, -this.height/2, this.z, '#f00', 15, 'line');
-        createParticles(this.x + this.width/2, -this.height/2, this.z, '#f00', 15, 'line');
-        addComboScore(100);
-    }
-    draw(ctx) {
-        let pb = project(this.x, 0, this.z);
-        let pL = project(this.x - this.width/2, 0, this.z); let pR = project(this.x + this.width/2, 0, this.z);
-        let pTL = project(this.x - this.width/2, -this.height, this.z); let pTR = project(this.x + this.width/2, -this.height, this.z);
-        let pTTopL = project(this.x - this.width/2 - 30, -this.height - 20, this.z); let pTTopR = project(this.x + this.width/2 + 30, -this.height - 20, this.z);
-
-        if (pb.s < 0) return;
-
-        ctx.strokeStyle = this.hitTimer > 0 ? '#fff' : (this.hp < 50 ? '#f55' : '#f00');
-        ctx.lineWidth = 3; ctx.shadowBlur = this.hitTimer > 0 ? 20 : 10; ctx.shadowColor = ctx.strokeStyle;
-
-        ctx.beginPath();
-        ctx.moveTo(pL.x, pL.y); ctx.lineTo(pTL.x, pTL.y);
-        ctx.moveTo(pR.x, pR.y); ctx.lineTo(pTR.x, pTR.y);
-        ctx.moveTo(pTL.x, pTL.y); ctx.lineTo(pTR.x, pTR.y);
-        ctx.moveTo(pTTopL.x, pTTopL.y); ctx.quadraticCurveTo(pb.x, pTTopL.y + 15*pb.s, pTTopR.x, pTTopR.y);
-        ctx.stroke(); ctx.shadowBlur = 0;
-    }
+function triggerBossDeath(boss) {
+    if (boss.isDying) return;
+    boss.isDying = true;
+    Game.bossDeathTimer = 180; 
+    AudioSys.sfx.bossDefeat(); 
+    VoiceSys.speak("Critical Core Destabilization Detected.");
+    addScore(5000 * Game.level); 
 }
 
 class BossWorm {
     constructor() {
-        this.segments = []; this.numSegments = 12; this.active = true; this.hp = 1000; this.maxHp = 1000; this.timer = 0;
-        VoiceSys.speak("Warning. Boss Approaching.");
-        for(let i=0; i<this.numSegments; i++) this.segments.push({ x: 0, y: -200, z: Z_LIMIT + i*100, radius: i === 0 ? 80 : 50 - (i*2), hitTimer: 0 });
+        this.segments = []; this.numSegments = 12; this.active = true; 
+        this.hp = 1500; this.maxHp = 1500; this.timer = 0; this.x=0; this.y=-200; this.z=Z_LIMIT;
+        VoiceSys.speak("Warning. Devourer class entity detected.");
+        for(let i=0; i<this.numSegments; i++) this.segments.push({ x: 0, y: -200, z: Z_LIMIT + i*100, radius: i===0?80:50-(i*2), hitTimer: 0 });
     }
     update() {
+        if (player.isDying && !this.isDying) return;
         this.timer++;
         let head = this.segments[0];
         head.x += (Math.sin(this.timer*0.03)*400 - head.x) * 0.05;
         head.y += (-200 + Math.cos(this.timer*0.05)*150 - head.y) * 0.05;
-        head.z += (500 + Math.sin(this.timer*0.02)*200 - head.z) * 0.05;
+        head.z += (400 + Math.sin(this.timer*0.02)*200 - head.z) * 0.05;
+        this.x = head.x; this.y = head.y; this.z = head.z; 
 
         for(let i=1; i<this.numSegments; i++) {
-            let seg = this.segments[i]; let prev = this.segments[i-1];
+            let seg = this.segments[i], prev = this.segments[i-1];
             seg.x += (prev.x - seg.x) * 0.3; seg.y += (prev.y - seg.y) * 0.3; seg.z += (prev.z + 100 - seg.z) * 0.3;
         }
 
         for(let seg of this.segments) if (seg.hitTimer > 0) seg.hitTimer--;
 
-        if (this.timer % 40 === 0) { AudioSys.sfx.enemyShoot(); Game.bullets.push(new Bullet(head.x, head.y, head.z, false)); }
+        if (this.timer % 40 === 0 && !this.isDying) { 
+            AudioSys.sfx.enemyShoot(); 
+            Game.bullets.push(new Bullet(head.x, head.y, head.z, false)); 
+        }
 
-        for (let b of Game.bullets) {
-            if (b.isPlayer && b.active) {
-                for(let i=0; i<this.numSegments; i++) {
-                    let seg = this.segments[i]; let hitArea = seg.radius * 1.8;
-                    if (Math.abs(b.z - seg.z) < 80 && Math.abs(b.x - seg.x) < hitArea && Math.abs(b.y - seg.y) < hitArea) {
-                        this.hp -= (i === 0 ? 10 : 5); seg.hitTimer = 8; b.active = false;
-                        createParticles(b.x, b.y, b.z, '#fff', 5, 'dot'); break;
+        if (!this.isDying) {
+            for (let b of Game.bullets) {
+                if (b.isPlayer && b.active) {
+                    for(let i=0; i<this.numSegments; i++) {
+                        let seg = this.segments[i]; let hitArea = seg.radius * 2.5;
+                        if (Math.abs(b.z - seg.z) < 100 && Math.abs(b.x - seg.x) < hitArea && Math.abs(b.y - seg.y) < (hitArea * 1.5)) {
+                            this.hp -= 15; seg.hitTimer = 5; b.active = false; break;
+                        }
                     }
                 }
             }
-        }
-
-        if (this.hp <= 0) {
-            this.active = false; screenShake = 40; AudioSys.sfx.explosion(); VoiceSys.speak("Target Destroyed");
-            for(let seg of this.segments) { createParticles(seg.x, seg.y, seg.z, '#f00', 15, 'line'); createParticles(seg.x, seg.y, seg.z, '#ff0', 10, 'dot'); }
-            addScore(5000); setTimeout(() => { Game.boss = null; }, 3000);
+            if (this.hp <= 0) triggerBossDeath(this);
         }
     }
     drawSegment(ctx, i) {
-        let seg = this.segments[i]; let p = project(seg.x, seg.y, seg.z);
+        let seg = this.segments[i], p = project(seg.x, seg.y, seg.z);
         if (p.z < -FOV) return;
         let s = seg.radius * p.s;
 
-        if (seg.hitTimer > 0) { ctx.strokeStyle = '#fff'; ctx.shadowColor = '#fff'; ctx.shadowBlur = 30; } 
-        else { ctx.strokeStyle = i === 0 ? '#f00' : '#800'; ctx.shadowColor = '#f00'; ctx.shadowBlur = i === 0 ? 20 : 5; }
-
-        ctx.fillStyle = '#000'; ctx.lineWidth = 3;
+        ctx.strokeStyle = seg.hitTimer > 0 ? '#fff' : (i===0 ? '#f00' : '#800');
+        ctx.lineWidth = 3; ctx.shadowBlur = i===0 ? 20 : 5; ctx.shadowColor = ctx.strokeStyle;
+        ctx.fillStyle = '#000';
         ctx.beginPath(); ctx.arc(p.x, p.y, s, 0, Math.PI*2); ctx.fill(); ctx.stroke();
         ctx.beginPath(); ctx.arc(p.x, p.y, s*0.5, 0, Math.PI*2); ctx.stroke(); ctx.shadowBlur = 0;
     }
-    drawUI(ctx) {
-        ctx.fillStyle = '#f00'; ctx.fillRect(halfWidth - 200, 50, 400 * (this.hp/this.maxHp), 10);
-        ctx.strokeStyle = '#fff'; ctx.strokeRect(halfWidth - 200, 50, 400, 10);
+    draw(ctx) {}
+}
+
+class BossMothership {
+    constructor() {
+        this.x = 0; this.y = -150; this.z = Z_LIMIT; this.active = true;
+        this.hp = 3000; this.maxHp = 3000; this.timer = 0; this.radius = 200; this.hitTimer=0;
+        VoiceSys.speak("Warning. Mothership fortress approaching.");
+    }
+    update() {
+        if (player.isDying && !this.isDying) return;
+        if (this.hitTimer > 0) this.hitTimer--;
+        this.timer++;
+        this.z += (300 - this.z) * 0.03; 
+        this.x = Math.sin(this.timer * 0.02) * 350;
+        
+        if (this.timer % 60 === 0 && this.z < 500 && !this.isDying) {
+            AudioSys.sfx.enemyShoot();
+            Game.bullets.push(new Bullet(this.x - 100, this.y+50, this.z, false, -15, 5));
+            Game.bullets.push(new Bullet(this.x, this.y+50, this.z, false, 0, 5));
+            Game.bullets.push(new Bullet(this.x + 100, this.y+50, this.z, false, 15, 5));
+        }
+        
+        if (!this.isDying) {
+            for (let b of Game.bullets) {
+                if (b.isPlayer && b.active) {
+                    if (Math.abs(b.z - this.z) < 120 && Math.abs(b.x - this.x) < 300 && Math.abs(b.y - this.y) < 200) {
+                        this.hp -= 15; this.hitTimer = 5; b.active = false;
+                    }
+                }
+            }
+            if (this.hp <= 0) triggerBossDeath(this);
+        }
+    }
+    draw(ctx) {
+        let p = project(this.x, this.y, this.z); if (p.z < -FOV) return;
+        let w = 250 * p.s, h = 80 * p.s;
+
+        ctx.strokeStyle = this.hitTimer > 0 ? '#fff' : '#f0f';
+        ctx.lineWidth = 4; ctx.shadowBlur = 20; ctx.shadowColor = ctx.strokeStyle;
+        
+        ctx.beginPath();
+        ctx.moveTo(p.x - w, p.y - h); ctx.lineTo(p.x + w, p.y - h);
+        ctx.lineTo(p.x + w + 50*p.s, p.y + h); ctx.lineTo(p.x - w - 50*p.s, p.y + h);
+        ctx.closePath(); ctx.stroke();
+        
+        ctx.fillStyle = (this.timer % 10 < 5) ? '#0ff' : '#000';
+        ctx.fillRect(p.x - w*0.8, p.y + h, 40*p.s, 20*p.s);
+        ctx.fillRect(p.x + w*0.8 - 40*p.s, p.y + h, 40*p.s, 20*p.s);
+        ctx.shadowBlur = 0;
+    }
+}
+
+class BossCore {
+    constructor() {
+        this.x = 0; this.y = -100; this.z = Z_LIMIT; this.active = true;
+        this.hp = 5000; this.maxHp = 5000; this.timer = 0; this.radius = 100; this.hitTimer=0;
+        this.shields = [{a:0},{a:Math.PI/2},{a:Math.PI},{a:Math.PI*1.5}];
+        VoiceSys.speak("Warning. Main Core engaged.");
+    }
+    update() {
+        if (player.isDying && !this.isDying) return;
+        if (this.hitTimer > 0) this.hitTimer--;
+        this.timer++;
+        this.z += (250 - this.z) * 0.05; 
+        this.x = Math.sin(this.timer * 0.04) * 200;
+        this.y = -100 + Math.cos(this.timer * 0.05) * 100;
+
+        this.shields.forEach(s => s.a += 0.05);
+
+        if (this.timer % 10 === 0 && this.z < 400 && !this.isDying) {
+            AudioSys.sfx.enemyShoot();
+            let angle = this.timer * 0.2;
+            Game.bullets.push(new Bullet(this.x, this.y, this.z, false, Math.cos(angle)*15, Math.sin(angle)*15));
+        }
+
+        if (!this.isDying) {
+            for (let b of Game.bullets) {
+                if (b.isPlayer && b.active && Math.abs(b.z - this.z) < 80) {
+                    let blocked = false;
+                    for(let s of this.shields) {
+                        let sx = this.x + Math.cos(s.a)*250; let sy = this.y + Math.sin(s.a)*250;
+                        if(Math.abs(b.x - sx) < 80 && Math.abs(b.y - sy) < 80) { blocked = true; break; }
+                    }
+                    
+                    if (blocked) { b.active = false; createParticles(b.x, b.y, b.z, '#0ff', 5); }
+                    else if (Math.abs(b.x - this.x) < 150 && Math.abs(b.y - this.y) < 150) {
+                        this.hp -= 15; this.hitTimer = 5; b.active = false;
+                    }
+                }
+            }
+            if (this.hp <= 0) triggerBossDeath(this);
+        }
+    }
+    draw(ctx) {
+        let p = project(this.x, this.y, this.z); if (p.z < -FOV) return;
+        
+        ctx.lineWidth = 3;
+        this.shields.forEach(s => {
+            let sp = project(this.x + Math.cos(s.a)*250, this.y + Math.sin(s.a)*250, this.z);
+            if(sp.z >= -FOV) {
+                ctx.strokeStyle = '#0ff'; ctx.shadowBlur = 10; ctx.shadowColor = '#0ff';
+                ctx.beginPath(); ctx.arc(sp.x, sp.y, 40*sp.s, 0, Math.PI*2); ctx.stroke();
+            }
+        });
+
+        let sRadius = this.radius * p.s;
+        ctx.strokeStyle = this.hitTimer > 0 ? '#fff' : '#f00';
+        ctx.shadowBlur = 30; ctx.shadowColor = this.strokeStyle;
+        ctx.beginPath(); ctx.arc(p.x, p.y, sRadius, 0, Math.PI*2); ctx.stroke();
+        
+        ctx.fillStyle = (this.timer % 20 < 10) ? '#f00' : '#fff';
+        ctx.beginPath(); ctx.arc(p.x, p.y, sRadius*0.4, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
     }
 }
 
 class PowerUp {
     constructor(x, y, z) {
-        this.x = x; this.y = y; this.z = z;
-        this.type = Math.random() > 0.5 ? 'heal' : 'weapon';
-        this.active = true; this.radius = 25;
-        this.color = this.type === 'heal' ? '#0f0' : '#0ff';
+        this.x = x; this.y = y; this.z = z; 
+        let rnd = Math.random();
+        if (rnd < 0.5) this.type = 'heal';          
+        else if (rnd < 0.85) this.type = 'weapon';   
+        else this.type = 'life';                    
+        this.active = true; this.radius = 35;
+        this.color = this.type === 'heal' ? '#0f0' : (this.type === 'weapon' ? '#0ff' : '#fff');
     }
     update() {
-        this.z -= SPEED * 1.2; this.y += Math.sin(frames*0.1)*2;
+        if (player.isDying) return;
+        this.z -= SPEED * 1.2; 
+        this.y += Math.sin(frames*0.1)*2; 
         if (this.z < -FOV) this.active = false;
 
-        if (this.active && Math.abs(this.z - player.z) < 40) {
-            if (Math.abs(this.x - player.x) < (this.radius + player.radius) && Math.abs(this.y - player.y) < (this.radius + player.radius)) {
-                AudioSys.sfx.powerup();
-                if (this.type === 'heal') {
-                    player.hp = Math.min(100, player.hp + 30);
-                    document.getElementById('hp').innerText = player.hp;
-                    createParticles(this.x, this.y, this.z, '#0f0', 20);
-                    VoiceSys.speak("Shield Restored");
-                } else {
-                    player.weaponLevel = 2; player.weaponTimer = 600;
-                    createParticles(this.x, this.y, this.z, '#0ff', 20);
-                    VoiceSys.speak("Weapon Upgraded");
-                }
-                addScore(50); this.active = false;
+        if (Math.abs(this.z - player.z) < 400) {
+            this.x += (player.x - this.x) * 0.08;
+            this.y += (player.y - this.y) * 0.08;
+        }
+
+        if (this.active && Math.abs(this.z - player.z) < 150 && Math.abs(this.x - player.x) < 180 && Math.abs(this.y - player.y) < 180) {
+            AudioSys.sfx.powerup();
+            
+            if (this.type === 'heal') {
+                player.hp = Math.min(player.maxHp, player.hp + 40);
+                VoiceSys.speak("Shield Restored");
+            } else if (this.type === 'weapon') {
+                player.weaponLevel = 2; player.weaponTimer = 800;
+                VoiceSys.speak("Weapon Upgraded");
+            } else if (this.type === 'life') {
+                player.hp = player.maxHp; 
+                emps++; 
+                document.getElementById('emp-count').innerText = emps;
+                VoiceSys.speak("System Overcharged");
             }
+            
+            document.getElementById('hp').innerText = player.hp;
+            createParticles(this.x, this.y, this.z, this.color, 25);
+            addScore(100); this.active = false;
         }
     }
     draw(ctx) {
-        let p = project(this.x, this.y, this.z);
-        if (p.z < -FOV) return;
+        let p = project(this.x, this.y, this.z); if (p.z < -FOV) return;
         let s = this.radius * p.s;
         
-        ctx.strokeStyle = this.color; ctx.lineWidth = 3; ctx.shadowBlur = 15; ctx.shadowColor = this.color;
-        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(frames * 0.05);
-        ctx.beginPath(); ctx.rect(-s/2, -s/2, s, s); ctx.stroke();
+        ctx.strokeStyle = this.color; 
+        ctx.lineWidth = 3; ctx.shadowBlur = 20; ctx.shadowColor = this.color;
         
-        ctx.fillStyle = this.color; ctx.beginPath();
-        if (this.type === 'heal') { ctx.fillRect(-s/4, -s/8, s/2, s/4); ctx.fillRect(-s/8, -s/4, s/4, s/2); } 
-        else { ctx.arc(0, 0, s/4, 0, Math.PI*2); ctx.fill(); }
-        ctx.restore(); ctx.shadowBlur = 0;
+        ctx.save(); ctx.translate(p.x, p.y); 
+        let pulse = 1 + Math.sin(frames * 0.1) * 0.15;
+        ctx.scale(pulse, pulse);
+        ctx.rotate(Math.sin(frames * 0.05) * 0.2); 
+
+        ctx.beginPath();
+        if (this.type === 'heal') {
+            let w = s/2.5; 
+            ctx.moveTo(-w, -s); ctx.lineTo(w, -s); ctx.lineTo(w, -w);
+            ctx.lineTo(s, -w); ctx.lineTo(s, w); ctx.lineTo(w, w);
+            ctx.lineTo(w, s); ctx.lineTo(-w, s); ctx.lineTo(-w, w);
+            ctx.lineTo(-s, w); ctx.lineTo(-s, -w); ctx.lineTo(-w, -w);
+            ctx.closePath(); ctx.stroke();
+            ctx.strokeRect(-w, -w, w*2, w*2); 
+        } else if (this.type === 'weapon') {
+            ctx.moveTo(-s, -s/3); ctx.lineTo(s*0.8, -s/3); 
+            ctx.lineTo(s*0.8, s/4); ctx.lineTo(0, s/4); 
+            ctx.lineTo(-s/3, s); ctx.lineTo(-s, s); 
+            ctx.closePath(); ctx.stroke();
+            ctx.beginPath(); ctx.arc(s*0.4, -s*0.05, s/5, 0, Math.PI*2); ctx.stroke();
+        } else if (this.type === 'life') {
+            ctx.moveTo(0, -s); 
+            ctx.lineTo(s*0.8, s*0.6); 
+            ctx.lineTo(0, s*0.3); 
+            ctx.lineTo(-s*0.8, s*0.6); 
+            ctx.closePath(); ctx.stroke();
+            ctx.fillStyle = '#0ff'; ctx.beginPath(); ctx.arc(0, s, s/3, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.restore(); ctx.shadowBlur=0;
     }
 }
 
 class Particle {
     constructor(x, y, z, color, type = 'dot') {
-        this.x = x; this.y = y; this.z = z;
-        this.vx = (Math.random() - 0.5) * 30; this.vy = (Math.random() - 0.5) * 30; this.vz = (Math.random() - 0.5) * 30;
-        this.color = color; this.life = 1.0; this.decay = 0.015 + Math.random() * 0.02;
-        this.type = type; this.angle = Math.random() * Math.PI * 2; this.rotSpeed = (Math.random() - 0.5) * 0.4;
-        this.size = 10 + Math.random() * 20;
+        this.x=x; this.y=y; this.z=z; this.color=color; this.type=type;
+        this.vx=(Math.random()-0.5)*30; this.vy=(Math.random()-0.5)*30; this.vz=(Math.random()-0.5)*30;
+        this.life=1.0; this.decay=0.015+Math.random()*0.02; this.angle=Math.random()*Math.PI*2;
+        this.rotSpeed=(Math.random()-0.5)*0.4; this.size=10+Math.random()*20;
     }
     update() {
-        this.x += this.vx; this.y += this.vy; this.z += this.vz;
-        this.angle += this.rotSpeed; this.life -= this.decay;
+        this.x+=this.vx; this.y+=this.vy; this.z+=this.vz; this.angle+=this.rotSpeed; this.life-=this.decay;
     }
     draw(ctx) {
         if (this.life <= 0) return;
-        let p = project(this.x, this.y, this.z);
-        if(p.z < -FOV) return;
+        let p = project(this.x, this.y, this.z); if(p.z < -FOV) return;
         ctx.globalAlpha = this.life;
-        
         if (this.type === 'line') {
             ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(this.angle);
             ctx.strokeStyle = this.color; ctx.lineWidth = 2 * p.s;
-            ctx.beginPath(); ctx.moveTo(-this.size * p.s, 0); ctx.lineTo(this.size * p.s, 0);
-            if(Math.random() > 0.5) { ctx.lineTo(0, -this.size * p.s); ctx.closePath(); }
-            ctx.stroke(); ctx.restore();
+            ctx.beginPath(); ctx.moveTo(-this.size*p.s, 0); ctx.lineTo(this.size*p.s, 0); ctx.stroke(); ctx.restore();
         } else {
             ctx.fillStyle = this.color; ctx.fillRect(p.x, p.y, 4*p.s, 4*p.s);
         }
@@ -942,67 +1095,124 @@ let player;
 function addScore(pts) {
     score += pts;
     document.getElementById('score').innerText = score;
-    difficulty = 1 + Math.floor(score / 500) * 0.2;
+    difficulty = 1 + (Game.level * 0.5) + Math.floor(score / 1000) * 0.1;
 }
 
 function addComboScore(pts) {
-    combo++;
-    multiplier = Math.min(5, 1 + Math.floor(combo / 5));
+    combo++; multiplier = Math.min(5, 1 + Math.floor(combo / 5));
     document.getElementById('combo-display').innerText = `COMBO: ${combo} (x${multiplier})`;
     addScore(pts * multiplier);
 }
 
 function resetCombo() {
     if (combo > 5) VoiceSys.speak("Combo Lost");
-    combo = 0; multiplier = 1;
-    document.getElementById('combo-display').innerText = "";
+    combo = 0; multiplier = 1; document.getElementById('combo-display').innerText = "";
+}
+
+function startWarp() {
+    Game.warpTimer = 300; 
+    Game.flashAlpha = 1.0; 
+    Game.bullets = []; Game.powerups = []; 
+    AudioSys.sfx.warp();
 }
 
 /**
  * BUCLE PRINCIPAL
  */
-function drawGrid() {
-    ctx.strokeStyle = (Game.boss && Game.boss.active) ? '#300' : '#030';
-    ctx.lineWidth = 1;
-    const gridSize = 200;
-    const offset = (frames * SPEED) % gridSize;
-    
-    for (let z = 0; z < Z_LIMIT; z += gridSize) {
-        let actualZ = z - offset;
-        if (actualZ < -FOV) continue;
-        let pLeft = project(-2000, 0, actualZ); let pRight = project(2000, 0, actualZ);
-        ctx.beginPath(); ctx.moveTo(pLeft.x, pLeft.y); ctx.lineTo(pRight.x, pRight.y); ctx.stroke();
-    }
-    for (let x = -2000; x <= 2000; x += 300) {
-        let pNear = project(x, 0, -FOV+10); let pFar = project(x, 0, Z_LIMIT);
-        ctx.beginPath(); ctx.moveTo(pNear.x, pNear.y); ctx.lineTo(pFar.x, pFar.y); ctx.stroke();
-    }
-}
-
 function update() {
     frames++;
-    player.update();
-    Mountains.updateAndDraw(ctx);
 
-    if (!Game.boss) {
-        // Spawn Dinámico
-        if (frames % Math.floor(60 / difficulty) === 0 && Math.random() > 0.3) {
-            let rnd = Math.random();
-            if (rnd < 0.3) Game.entities.push(new Enemy((Math.random()-0.5)*800, (Math.random()-0.5)*400 - 100, Z_LIMIT));
-            else if (rnd < 0.6) Game.entities.push(new Kamikaze((Math.random()-0.5)*1200, (Math.random()-0.5)*400 - 100, Z_LIMIT));
-            else if (rnd < 0.8) Game.entities.push(new Asteroid((Math.random()-0.5)*1000, (Math.random()-0.5)*600, Z_LIMIT));
-            else Game.entities.push(new Mine((Math.random()-0.5)*800, (Math.random()-0.5)*400 - 100, Z_LIMIT));
+    // Lógica de Muerte del Jugador (Destrucción Épica)
+    if (player && player.isDying) {
+        Game.playerDeathTimer--;
+        screenShake = 20 + ((120 - Game.playerDeathTimer) * 0.2);
+        
+        if (frames % 5 === 0) {
+            createParticles(player.x + (Math.random()-0.5)*150, player.y + (Math.random()-0.5)*150, player.z, '#ff0', 20, 'dot');
+            createParticles(player.x + (Math.random()-0.5)*150, player.y + (Math.random()-0.5)*150, player.z, '#f00', 10, 'line');
+            AudioSys.sfx.explosion();
         }
-        if (frames % 200 === 0 && Math.random() > 0.4) Game.entities.push(new Torii((Math.random()-0.5)*600, Z_LIMIT));
-        if (frames % 400 === 0 && Math.random() > 0.4) Game.powerups.push(new PowerUp((Math.random()-0.5)*600, (Math.random()-0.5)*200 - 100, Z_LIMIT));
+
+        if (Game.playerDeathTimer <= 0) {
+            endGame(false);
+            return;
+        }
+    } else if (player) {
+        player.update();
+    }
+
+    if (Game.warpTimer > 0) {
+        Game.warpTimer--;
+        
+        if (Game.warpTimer > 200) {
+            let t = (300 - Game.warpTimer) / 100; 
+            SPEED = BASE_SPEED + (120 * (t * t)); 
+        } else if (Game.warpTimer > 100) {
+            SPEED = BASE_SPEED + 120; 
+        } else {
+            let t = Game.warpTimer / 100; 
+            SPEED = BASE_SPEED + (120 * (t * t)); 
+        }
+
+        document.getElementById('warp-text').classList.remove('hidden');
+        
+        if (Game.warpTimer === 100) {
+            Game.flashAlpha = 1.0;
+            Game.level++;
+            Game.boss = null;
+            nextBossScore = score + (4000 * Game.level); 
+            document.getElementById('level-display').innerText = `SECTOR: ${Game.level}`;
+            VoiceSys.speak("Entering Sector " + Game.level);
+        }
+
+        if (Game.warpTimer === 0) {
+            document.getElementById('warp-text').classList.add('hidden');
+            SPEED = BASE_SPEED + (Game.level * 2);
+        }
+    } else if (!player || !player.isDying) {
+        SPEED = BASE_SPEED + (Game.level * 2);
+    }
+
+    // Spawn Dinámico (Pausado si el jugador muere)
+    if (!Game.boss && Game.warpTimer <= 0 && (!player || !player.isDying)) {
+        if (frames % Math.max(15, Math.floor(60 / difficulty)) === 0 && Math.random() > 0.3) {
+            let spawnY = -Math.random() * 450 + 50; 
+            Game.entities.push(new Enemy((Math.random()-0.5)*1200, spawnY, Z_LIMIT));
+        }
+        if (frames % 300 === 0 && Math.random() > 0.4) {
+            Game.powerups.push(new PowerUp((Math.random()-0.5)*800, (Math.random()-0.5)*200 - 100, Z_LIMIT));
+        }
 
         if (score >= nextBossScore && !Game.boss) {
-            Game.boss = new BossWorm();
-            Game.entities = Game.entities.filter(e => e instanceof Torii); 
-            nextBossScore += 2000; // El próximo jefe aparecerá 2000 puntos después
+            if (Game.level === 1) Game.boss = new BossWorm();
+            else if (Game.level === 2) Game.boss = new BossMothership();
+            else if (Game.level === 3) Game.boss = new BossCore();
+            
+            Game.entities.forEach(e => createParticles(e.x, e.y, e.z, '#fff', 5));
+            Game.entities = [];
         }
-    } else if (Game.boss.active) {
-        Game.boss.update();
+    } else if (Game.boss && Game.boss.active) {
+        if (Game.boss.isDying) {
+            screenShake = 10 + ((180 - Game.bossDeathTimer) * 0.1); 
+            if (frames % 4 === 0) {
+                createParticles(Game.boss.x + (Math.random()-0.5)*300, Game.boss.y + (Math.random()-0.5)*300, Game.boss.z, '#fff', 15, 'dot');
+                createParticles(Game.boss.x + (Math.random()-0.5)*300, Game.boss.y + (Math.random()-0.5)*300, Game.boss.z, '#f00', 5, 'line');
+                AudioSys.sfx.hit();
+            }
+            Game.bossDeathTimer--;
+            
+            if (Game.bossDeathTimer <= 0) {
+                Game.boss.active = false;
+                if (Game.level >= 3) {
+                    Game.flashAlpha = 1.0;
+                    setTimeout(() => endGame(true), 2000);
+                } else {
+                    startWarp();
+                }
+            }
+        } else {
+            Game.boss.update();
+        }
     }
 
     Game.entities.forEach(e => e.update());
@@ -1014,43 +1224,54 @@ function update() {
     Game.bullets = Game.bullets.filter(b => b.active);
     Game.particles = Game.particles.filter(p => p.life > 0);
     Game.powerups = Game.powerups.filter(p => p.active);
+    
+    if (Game.boss && Game.boss.active) {
+        let ui = document.getElementById('combo-display');
+        ui.innerText = `BOSS: ${Math.max(0, Math.floor((Game.boss.hp / Game.boss.maxHp) * 100))}%`;
+        ui.className = 'red-text';
+    } else {
+        document.getElementById('combo-display').className = 'yellow-text';
+    }
 }
 
 function render() {
-    ctx.fillStyle = 'rgba(5, 5, 5, 0.8)';
+    ctx.fillStyle = 'rgba(5, 5, 5, 0.85)';
     ctx.fillRect(0, 0, width, height);
 
     ctx.save();
     if (screenShake > 0) {
         ctx.translate((Math.random()-0.5)*screenShake, (Math.random()-0.5)*screenShake);
-        screenShake *= 0.9;
-        if (screenShake < 0.5) screenShake = 0;
+        screenShake *= 0.85; if (screenShake < 0.5) screenShake = 0;
     }
 
     Stars.updateAndDraw(ctx);
-    drawGrid();
-    Mountains.updateAndDraw(ctx);
+    WarpTunnel.updateAndDraw(ctx);
+    Env.updateAndDraw(ctx);
     EMP.updateAndDraw(ctx);
 
     let renderList = [...Game.entities, ...Game.bullets, ...Game.powerups, player];
     
     if (Game.boss && Game.boss.active) {
-        for (let i = 0; i < Game.boss.numSegments; i++) renderList.push({ z: Game.boss.segments[i].z, draw: (context) => Game.boss.drawSegment(context, i) });
+        if (Game.level === 1) {
+            for (let i = 0; i < Game.boss.numSegments; i++) renderList.push({ z: Game.boss.segments[i].z, draw: (c) => Game.boss.drawSegment(c, i) });
+        } else {
+            renderList.push(Game.boss);
+        }
     }
     
     renderList.sort((a, b) => b.z - a.z);
     renderList.forEach(e => {
-        if (e === player) { player.draw(ctx); } else if (e.draw) { e.draw(ctx); }
+        if (e === player && player) { player.draw(ctx); } else if (e && e.draw) { e.draw(ctx); }
     });
 
-    if (Game.boss && Game.boss.active) Game.boss.drawUI(ctx);
     Game.particles.forEach(p => p.draw(ctx));
-
-    if (keys.w || keys.up) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.beginPath();
-        for(let i=0; i<10; i++) { ctx.moveTo(Math.random()*width, 0); ctx.lineTo(Math.random()*width, height); }
-        ctx.stroke();
+    
+    if (Game.flashAlpha > 0) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${Game.flashAlpha})`;
+        ctx.fillRect(0, 0, width, height);
+        Game.flashAlpha -= 0.02; 
     }
+
     ctx.restore();
 }
 
@@ -1063,42 +1284,50 @@ function gameLoop() {
 function startGame() {
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('ui-layer').classList.remove('hidden');
+
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        document.getElementById('mobile-controls').classList.remove('hidden');
+    }
     
     AudioSys.init(); AudioSys.startMusic();
-    VoiceSys.speak("System Online. Mission Start.");
+    VoiceSys.speak("System Online. Entering Sector 1.");
     
-    player = new Player(); Mountains.init(); Stars.init();
-    score = 0; combo = 0; multiplier = 1; emps = 3; difficulty = 1; frames = 0; nextBossScore = 1000;
+    player = new Player(); Env.init(); Stars.init();
+    score = 0; combo = 0; multiplier = 1; emps = 3; difficulty = 1; frames = 0; 
+    Game.level = 1; nextBossScore = 1500; Game.warpTimer = 0;
     Game.entities = []; Game.bullets = []; Game.particles = []; Game.powerups = []; Game.boss = null;
     EMP.active = false;
     
     document.getElementById('score').innerText = score;
     document.getElementById('combo-display').innerText = '';
-    document.getElementById('hp').innerText = 100;
+    document.getElementById('hp').innerText = player.hp;
     document.getElementById('emp-count').innerText = emps;
+    document.getElementById('level-display').innerText = `SECTOR: 1`;
     
     Game.state = 'PLAYING'; gameLoop();
 }
 
-function endGame() {
-    Game.state = 'GAMEOVER';
+function endGame(victory = false) {
+    Game.state = victory ? 'VICTORY' : 'GAMEOVER';
     AudioSys.stopMusic();
-    VoiceSys.speak("System Failure.");
-
-    if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('vectorRunnerHighScore', highScore);
-    }
+    Meta.save(score);
 
     document.getElementById('ui-layer').classList.add('hidden');
-    document.getElementById('game-over-screen').classList.remove('hidden');
-    document.getElementById('final-score').innerText = score;
-    document.getElementById('high-score-end').innerText = highScore;
+    document.getElementById('mobile-controls').classList.add('hidden');
+    
+    if (victory) {
+        document.getElementById('victory-screen').classList.remove('hidden');
+        document.getElementById('victory-score').innerText = score;
+    } else {
+        document.getElementById('game-over-screen').classList.remove('hidden');
+        document.getElementById('final-score').innerText = score;
+    }
+    
     cancelAnimationFrame(gameLoopId);
 }
 
-document.getElementById('high-score-start').innerText = highScore;
-document.getElementById('start-screen').addEventListener('click', startGame);
+document.getElementById('high-score-start').innerText = Meta.highScore;
+document.getElementById('start-btn').addEventListener('click', startGame);
 
 </script>
 </body>
