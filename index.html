@@ -817,12 +817,27 @@ class Bullet {
         let p = project(this.x, this.y, this.z);
         if (p.z < -FOV) return;
         
-        ctx.fillStyle = this.isPlayer ? '#0ff' : '#f0f';
+        // Balas enemigas muy visibles (Rojas con núcleo blanco)
+        ctx.fillStyle = this.isPlayer ? '#0ff' : '#f00';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = ctx.fillStyle;
+        
         ctx.beginPath();
         if (this.vx !== 0) {
-            ctx.ellipse(p.x, p.y, 6*p.s, 6*p.s, 0, 0, Math.PI*2);
+            ctx.ellipse(p.x, p.y, 8*p.s, 8*p.s, 0, 0, Math.PI*2);
         } else {
-            ctx.ellipse(p.x, p.y, 2*p.s, 14*p.s, 0, 0, Math.PI*2);
+            ctx.ellipse(p.x, p.y, 4*p.s, 24*p.s, 0, 0, Math.PI*2);
+        }
+        ctx.fill();
+
+        // Núcleo central
+        ctx.fillStyle = '#fff';
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        if (this.vx !== 0) {
+            ctx.ellipse(p.x, p.y, 3*p.s, 3*p.s, 0, 0, Math.PI*2);
+        } else {
+            ctx.ellipse(p.x, p.y, 1.5*p.s, 12*p.s, 0, 0, Math.PI*2);
         }
         ctx.fill();
     }
@@ -919,24 +934,25 @@ class Player {
         if (this.isRespawning) return;
         if (this.invulnerableTimer > 0 && frames % 6 < 3) return;
 
-        let s = this.radius * 1.5; 
-        // Helper para proyectar los vertices de forma realista hacia el fondo Z
+        let s = this.radius; 
         let pt = (dx, dy, dz) => project(this.x + dx, this.y + dy, this.z + dz);
 
-        // Vértices 3D verdaderos apuntando HASTA EL FONDO (Z aumenta)
-        let n = pt(0, -s*0.2, s * 2.5); // Nose (lejos)
-        let bl = pt(-s * 0.7, s * 0.4, -s); // Back Left (cerca)
-        let br = pt(s * 0.7, s * 0.4, -s); // Back Right
-        let bt = pt(0, -s * 0.6, -s); // Back Top
-        let c = pt(0, -s * 0.4, s * 0.5); // Cabina central
+        // NAVE MÁS COMPACTA Y ANCHA
+        let n = pt(0, -s*0.2, s * 1.5); 
+        let bl = pt(-s * 1.2, s * 0.4, -s*0.5); 
+        let br = pt(s * 1.2, s * 0.4, -s*0.5); 
+        let bt = pt(0, -s * 0.8, -s*0.5); 
+        let c = pt(0, -s * 0.4, s * 0.2); 
 
-        let wl = pt(-s * 2, s * 0.2, -s * 0.2); // Wing Left
-        let wr = pt(s * 2, s * 0.2, -s * 0.2); // Wing Right
+        let wl = pt(-s * 2.5, s * 0.2, -s * 0.2); 
+        let wr = pt(s * 2.5, s * 0.2, -s * 0.2); 
+        let wlBase = pt(-s*0.7, s*0.2, s*0.2);
+        let wrBase = pt(s*0.7, s*0.2, s*0.2);
 
         ctx.strokeStyle = this.hitTimer > 0 ? '#f00' : '#fff';
         ctx.lineWidth = 1.5;
 
-        // Dibujar Fuselaje Central 3D
+        // Fuselaje Central
         ctx.beginPath();
         ctx.moveTo(n.x, n.y); ctx.lineTo(bl.x, bl.y);
         ctx.lineTo(br.x, br.y); ctx.lineTo(n.x, n.y);
@@ -948,18 +964,16 @@ class Player {
         ctx.moveTo(c.x, c.y); ctx.lineTo(br.x, br.y);
         ctx.stroke();
 
-        // Alas 3D
+        // Alas
         ctx.beginPath();
-        let wlBase = pt(-s*0.4, s*0.2, s*0.5);
-        let wrBase = pt(s*0.4, s*0.2, s*0.5);
         ctx.moveTo(bl.x, bl.y); ctx.lineTo(wl.x, wl.y); ctx.lineTo(wlBase.x, wlBase.y);
         ctx.moveTo(br.x, br.y); ctx.lineTo(wr.x, wr.y); ctx.lineTo(wrBase.x, wrBase.y);
         ctx.stroke();
 
-        // Motor y Fuego mirando hacia "atrás" (Hacia la cámara)
+        // Motores Poligonales
         if (Game.state === 'PLAYING') {
             let thrust = s * (1 + Math.random() * 1.5);
-            let f = pt(0, s*0.2, -s - thrust); 
+            let f = pt(0, s*0.2, -s*0.5 - thrust); 
             
             ctx.strokeStyle = '#0ff';
             ctx.beginPath();
@@ -977,32 +991,42 @@ class Enemy {
         this.type = type;
         this.active = true;
         this.hitTimer = 0;
+        this.isSmall = false; 
         
         if (this.type === 'tower') {
-            this.hp = 60 * Game.level; 
+            this.hp = 45; // 3 tiros
             this.radius = 80;
             this.lastShot = frames + Math.random()*30;
         } else if (this.type === 'crawler') {
-            this.hp = 25 * Game.level; 
+            this.hp = 15; // 1 tiro
             this.radius = 45;
             this.lastShot = frames + Math.random()*40;
             this.xDir = Math.random() > 0.5 ? 1 : -1;
-        } else if (this.type === 'morph') {
-            this.hp = 30 * Game.level; 
+        } else if (this.type === 'morph') { // Interceptor
+            this.hp = 30; // 2 tiros
             this.radius = 50;
             this.lastShot = frames + Math.random()*50;
+        } else if (this.type === 'orbiter') {
+            this.hp = 30; // 2 tiros
+            this.radius = 40;
+            this.lastShot = frames + Math.random()*40;
+            this.zSpeedMult = 0.6; // Mucho más lento
         } else {
-            this.hp = 20 * Game.level; 
+            // Flyer normal
+            this.hp = 15; // 1 tiro
             this.radius = 60;
             this.lastShot = frames + Math.random()*60;
+            this.xDir = 0; 
         }
+        this.maxHp = this.hp; 
     }
 
     update() {
         if (player.isRespawning) return; 
         if (this.hitTimer > 0) this.hitTimer--;
         
-        this.z -= SPEED * (this.type === 'tower' ? 1.0 : 1.1); 
+        let zMult = this.zSpeedMult || (this.type === 'tower' ? 1.0 : 1.1);
+        this.z -= SPEED * zMult;
         
         if (this.type === 'crawler') {
             this.x += Math.sin(frames*0.1 + this.z)*15 * this.xDir;
@@ -1012,12 +1036,16 @@ class Enemy {
         } else if (this.type === 'morph') {
             this.x += Math.sin(frames*0.08 + this.z)*10; 
             this.y += Math.cos(frames*0.09)*10;
+        } else if (this.type === 'orbiter') {
+            this.x += Math.sin(frames*0.02)*6;
+            this.y += Math.cos(frames*0.03)*5;
         } else {
+            let dir = this.xDir || 0;
             if (Game.level >= 3) {
-                this.x += Math.sin(frames*0.1 + this.z)*12;
+                this.x += Math.sin(frames*0.1 + this.z)*12 + dir*3;
                 this.y += Math.cos(frames*0.08)*12;
             } else {
-                this.x += Math.sin(frames*0.05 + this.z)*8; 
+                this.x += Math.sin(frames*0.05 + this.z)*8 + dir*3; 
                 this.y += Math.cos(frames*0.04)*4;
             }
         }
@@ -1026,8 +1054,8 @@ class Enemy {
 
         for (let b of Game.bullets) {
             if (b.isPlayer && b.active) {
-                let hitAreaX = this.radius * (this.type === 'crawler' ? 3 : 2);
-                let hitAreaY = this.radius * (this.type === 'tower' ? 4 : 2.5);
+                let hitAreaX = this.radius * (this.type === 'crawler' ? 3 : (this.type === 'tower' ? 1.5 : 2));
+                let hitAreaY = this.radius * (this.type === 'tower' ? 3.5 : 2.5);
                 
                 if (Math.abs(b.z - this.z) < 150 && Math.abs(b.x - this.x) < hitAreaX && Math.abs(b.y - this.y) < hitAreaY) {
                     this.hp -= 15; this.hitTimer = 5; b.active = false;
@@ -1051,6 +1079,10 @@ class Enemy {
             } else if (this.type === 'crawler') {
                 Game.bullets.push(new Bullet(this.x, this.y, this.z, false, 0, -15));
                 this.lastShot = frames + Math.max(30, 70 - (Game.level * 10));
+            } else if (this.type === 'orbiter') {
+                let a = frames * 0.1;
+                Game.bullets.push(new Bullet(this.x, this.y, this.z, false, Math.cos(a)*10, Math.sin(a)*10));
+                this.lastShot = frames + Math.max(30, 60 - (Game.level * 10));
             } else {
                 Game.bullets.push(new Bullet(this.x, this.y, this.z, false));
                 this.lastShot = frames + Math.max(30, 80 - (Game.level * 10));
@@ -1063,10 +1095,21 @@ class Enemy {
         screenShake = this.type === 'tower' ? 12 : 5; 
         AudioSys.sfx.explosion();
         
-        let pColor = this.type === 'morph' ? '#f0f' : '#f00';
+        let pColor = this.type === 'morph' ? '#f80' : (this.type==='orbiter'?'#ff0':'#f00');
         createStickExplosion(this.x, this.y, this.z, pColor, this.type === 'tower' ? 30 : 15);
         addComboScore(this.type === 'tower' ? 150 : 50);
         
+        // MECÁNICA DE SEPARACIÓN EN 2
+        if (this.type === 'flyer' && !this.isSmall) {
+            let e1 = new Enemy(this.x - 100, this.y, this.z, 'flyer');
+            e1.isSmall = true; e1.radius = 35; e1.hp = 15; e1.maxHp = e1.hp; e1.xDir = -3;
+            
+            let e2 = new Enemy(this.x + 100, this.y, this.z, 'flyer');
+            e2.isSmall = true; e2.radius = 35; e2.hp = 15; e2.maxHp = e2.hp; e2.xDir = 3;
+            
+            Game.entities.push(e1, e2);
+        }
+
         Game.flashAlpha = this.type === 'tower' ? 0.6 : 0.2;
     }
 
@@ -1075,26 +1118,58 @@ class Enemy {
         if (p.z < -FOV) return;
         let s = this.radius * p.s;
 
-        ctx.strokeStyle = this.hitTimer > 0 ? '#fff' : (this.type === 'morph' ? '#f0f' : '#f00');
+        // Barra de Salud 
+        if (this.hp < this.maxHp && this.hp > 0 && this.maxHp > 15) {
+            let hpRatio = this.hp / this.maxHp;
+            let barY = p.y - s*1.5;
+            
+            ctx.strokeStyle = `rgba(255, 0, 0, 0.5)`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(p.x - s + (s * 2 * hpRatio), barY);
+            ctx.lineTo(p.x + s, barY);
+            ctx.stroke();
+
+            ctx.strokeStyle = `rgba(0, 255, 255, 0.8)`;
+            ctx.beginPath();
+            ctx.moveTo(p.x - s, barY);
+            ctx.lineTo(p.x - s + (s * 2 * hpRatio), barY);
+            ctx.stroke();
+        }
+
+        ctx.strokeStyle = this.hitTimer > 0 ? '#fff' : (this.type === 'morph' ? '#f80' : (this.type==='orbiter'?'#ff0':'#f00'));
         ctx.lineWidth = 1.5; 
-        ctx.beginPath(); 
         
         if (this.type === 'tower') {
-            ctx.moveTo(p.x, p.y - s*3); 
-            ctx.lineTo(p.x + s*0.6, p.y + s*1.5); 
-            ctx.lineTo(p.x - s*0.6, p.y + s*1.5); 
+            // Diseño Clásico Torre Celosía
+            let w = s * 0.8;
+            let topW = s * 0.3;
+            let h = s * 3;
+            
+            ctx.beginPath();
+            ctx.moveTo(p.x - w, p.y + h); ctx.lineTo(p.x - topW, p.y - h);
+            ctx.lineTo(p.x + topW, p.y - h); ctx.lineTo(p.x + w, p.y + h);
             ctx.closePath();
-            
-            let ringOffset = Math.sin(frames * 0.05) * s * 0.5;
-            ctx.moveTo(p.x - s*1.2, p.y - s + ringOffset); ctx.lineTo(p.x + s*1.2, p.y - s + ringOffset);
-            ctx.moveTo(p.x - s*0.8, p.y - s*2 - ringOffset); ctx.lineTo(p.x + s*0.8, p.y - s*2 - ringOffset);
-            
-            ctx.moveTo(p.x - s, p.y + s*1.5); ctx.lineTo(p.x + s, p.y + s*1.5);
             ctx.stroke();
+
+            ctx.beginPath();
+            // Celosía X interior
+            ctx.moveTo(p.x - w, p.y + h); ctx.lineTo(p.x + w*0.75, p.y + h*0.25);
+            ctx.moveTo(p.x + w, p.y + h); ctx.lineTo(p.x - w*0.75, p.y + h*0.25);
+            ctx.moveTo(p.x - w*0.75, p.y + h*0.25); ctx.lineTo(p.x + w*0.5, p.y - h*0.5);
+            ctx.moveTo(p.x + w*0.75, p.y + h*0.25); ctx.lineTo(p.x - w*0.5, p.y - h*0.5);
             
-            ctx.beginPath(); ctx.arc(p.x, p.y - s*1.5, s*0.3, 0, Math.PI*2); ctx.stroke(); 
+            // Travesaños
+            ctx.moveTo(p.x - w*0.75, p.y + h*0.25); ctx.lineTo(p.x + w*0.75, p.y + h*0.25);
+            ctx.moveTo(p.x - w*0.5, p.y - h*0.5); ctx.lineTo(p.x + w*0.5, p.y - h*0.5);
+            ctx.stroke();
+
+            // Luz parpadeante
+            ctx.fillStyle = (frames % 20 < 10) ? '#f00' : '#fff';
+            ctx.beginPath(); ctx.arc(p.x, p.y - h - s*0.2, s*0.2, 0, Math.PI*2); ctx.fill();
             
         } else if (this.type === 'crawler') {
+            ctx.beginPath();
             ctx.moveTo(p.x - s*2, p.y); ctx.lineTo(p.x - s, p.y - s); 
             ctx.lineTo(p.x + s, p.y - s); ctx.lineTo(p.x + s*2, p.y);
             ctx.lineTo(p.x + s, p.y + s*0.5); ctx.lineTo(p.x - s, p.y + s*0.5);
@@ -1102,18 +1177,54 @@ class Enemy {
             ctx.beginPath(); ctx.arc(p.x, p.y - s*0.5, s*0.4, 0, Math.PI*2); ctx.stroke(); 
             
         } else if (this.type === 'morph') {
-            let points = 5;
-            let morphFactor = Math.sin(frames * 0.1); 
-            for (let i = 0; i < points * 2; i++) {
-                let radius = i % 2 === 0 ? s * (1 + morphFactor*0.5) : s * 0.5 * (1 - morphFactor*0.5);
-                let angle = (i * Math.PI) / points + (frames * 0.05);
-                let vx = p.x + Math.cos(angle) * radius;
-                let vy = p.y + Math.sin(angle) * radius;
-                if (i === 0) ctx.moveTo(vx, vy); else ctx.lineTo(vx, vy);
-            }
-            ctx.closePath(); ctx.stroke();
+            // Foldable Interceptor Geométrico
+            let fold = Math.sin(frames * 0.05); 
+            let w = s * (1.5 + fold * 0.5); 
+            let h = s * 0.8;
             
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y - h); ctx.lineTo(p.x + s*0.4, p.y);
+            ctx.lineTo(p.x, p.y + h); ctx.lineTo(p.x - s*0.4, p.y);
+            ctx.closePath();
+            ctx.stroke();
+
+            ctx.beginPath();
+            // Ala derecha
+            ctx.moveTo(p.x + s*0.4, p.y); ctx.lineTo(p.x + w, p.y - h*1.5);
+            ctx.lineTo(p.x + w, p.y + h*1.5); ctx.lineTo(p.x + s*0.4, p.y);
+            // Ala Izquierda
+            ctx.moveTo(p.x - s*0.4, p.y); ctx.lineTo(p.x - w, p.y - h*1.5);
+            ctx.lineTo(p.x - w, p.y + h*1.5); ctx.lineTo(p.x - s*0.4, p.y);
+            ctx.stroke();
+            
+        } else if (this.type === 'orbiter') {
+            // Núcleo
+            ctx.beginPath(); ctx.arc(p.x, p.y, s*0.6, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(p.x, p.y, s*0.3, 0, Math.PI*2); ctx.stroke();
+            
+            // Órbitas y Espirales (Orbiting Stars)
+            let numStars = 8;
+            let spiral1 = s * (1.5 + Math.sin(frames * 0.05));
+            let spiral2 = s * (1.5 + Math.cos(frames * 0.05));
+
+            for (let i=0; i<numStars; i++) {
+                // Espiral Derecha
+                let a1 = frames * 0.05 + (i * Math.PI * 2 / numStars);
+                let sx1 = p.x + Math.cos(a1) * spiral1;
+                let sy1 = p.y + Math.sin(a1) * spiral1 * 0.3; 
+                ctx.fillStyle = '#0ff';
+                ctx.fillRect(sx1, sy1, 3, 3);
+                
+                // Espiral Izquierda
+                let a2 = -frames * 0.08 + (i * Math.PI * 2 / numStars);
+                let sx2 = p.x + Math.sin(a2) * spiral2;
+                let sy2 = p.y + Math.cos(a2) * spiral2 * 0.8;
+                ctx.fillStyle = '#ff0';
+                ctx.fillRect(sx2, sy2, 3, 3);
+            }
+
         } else {
+            ctx.beginPath();
             ctx.moveTo(p.x, p.y - s); ctx.lineTo(p.x + s, p.y); ctx.lineTo(p.x, p.y + s); ctx.lineTo(p.x - s, p.y);
             ctx.closePath(); ctx.stroke(); 
             ctx.beginPath(); ctx.moveTo(p.x, p.y - s); ctx.lineTo(p.x, p.y + s); ctx.stroke();
@@ -1136,7 +1247,7 @@ class BossWorm {
         this.segments = []; this.numSegments = 12; this.active = true; 
         this.hp = 1500; this.maxHp = 1500; this.timer = 0; 
         this.x = 0; this.y = -200; this.z = Z_LIMIT;
-        this.history = []; // Historial para movimiento de serpiente perfecto
+        this.history = []; 
         
         VoiceSys.speak("Warning. Devourer class entity detected.");
         for(let i=0; i<this.numSegments; i++) {
@@ -1149,7 +1260,6 @@ class BossWorm {
         
         let head = this.segments[0];
         
-        // Curva de Lissajous salvaje para la cabeza (Retorcimiento caótico)
         let targetX = Math.sin(this.timer * 0.05) * 600 + Math.sin(this.timer * 0.02) * 200;
         let targetY = Math.cos(this.timer * 0.04) * 300 + Math.sin(this.timer * 0.07) * 100 - 100;
         let targetZ = 300 + Math.sin(this.timer * 0.03) * 300; 
@@ -1159,13 +1269,11 @@ class BossWorm {
         head.z += (targetZ - head.z) * 0.1;
         this.x = head.x; this.y = head.y; this.z = head.z; 
 
-        // Actualizar el historial de posiciones de la cabeza
         this.history.unshift({x: head.x, y: head.y, z: head.z});
         if (this.history.length > this.numSegments * 5 + 1) {
             this.history.pop();
         }
 
-        // Segmentos del cuerpo siguen exactamente a la cabeza con retraso
         for(let i=1; i<this.numSegments; i++) {
             let histIndex = Math.min(i * 5, this.history.length - 1);
             let histPos = this.history[histIndex];
@@ -1202,6 +1310,15 @@ class BossWorm {
         let seg = this.segments[i], p = project(seg.x, seg.y, seg.z);
         if (p.z < -FOV) return;
         let s = seg.radius * p.s;
+
+        if (this.hp < this.maxHp && this.hp > 0 && i === 0) {
+            let hpRatio = this.hp / this.maxHp;
+            let barY = p.y - s*1.5;
+            ctx.strokeStyle = `rgba(255, 0, 0, 0.5)`; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(p.x - s + (s * 2 * hpRatio), barY); ctx.lineTo(p.x + s, barY); ctx.stroke();
+            ctx.strokeStyle = `rgba(0, 255, 255, 0.8)`;
+            ctx.beginPath(); ctx.moveTo(p.x - s, barY); ctx.lineTo(p.x - s + (s * 2 * hpRatio), barY); ctx.stroke();
+        }
 
         ctx.strokeStyle = seg.hitTimer > 0 ? '#fff' : (i===0 ? '#f00' : '#800');
         ctx.lineWidth = 2; 
@@ -1246,6 +1363,15 @@ class BossMothership {
     draw(ctx) {
         let p = project(this.x, this.y, this.z); if (p.z < -FOV) return;
         let w = 250 * p.s, h = 120 * p.s; 
+
+        if (this.hp < this.maxHp && this.hp > 0) {
+            let hpRatio = this.hp / this.maxHp;
+            let barY = p.y - h*1.5;
+            ctx.strokeStyle = `rgba(255, 0, 0, 0.5)`; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(p.x - w + (w * 2 * hpRatio), barY); ctx.lineTo(p.x + w, barY); ctx.stroke();
+            ctx.strokeStyle = `rgba(0, 255, 255, 0.8)`;
+            ctx.beginPath(); ctx.moveTo(p.x - w, barY); ctx.lineTo(p.x - w + (w * 2 * hpRatio), barY); ctx.stroke();
+        }
 
         ctx.strokeStyle = this.hitTimer > 0 ? '#fff' : '#f0f';
         ctx.lineWidth = 2;
@@ -1315,6 +1441,17 @@ class BossCore {
     draw(ctx) {
         let p = project(this.x, this.y, this.z); if (p.z < -FOV) return;
         
+        let sRadius = this.radius * p.s;
+
+        if (this.hp < this.maxHp && this.hp > 0) {
+            let hpRatio = this.hp / this.maxHp;
+            let barY = p.y - sRadius*3;
+            ctx.strokeStyle = `rgba(255, 0, 0, 0.5)`; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(p.x - sRadius + (sRadius * 2 * hpRatio), barY); ctx.lineTo(p.x + sRadius, barY); ctx.stroke();
+            ctx.strokeStyle = `rgba(0, 255, 255, 0.8)`;
+            ctx.beginPath(); ctx.moveTo(p.x - sRadius, barY); ctx.lineTo(p.x - sRadius + (sRadius * 2 * hpRatio), barY); ctx.stroke();
+        }
+
         ctx.lineWidth = 2;
         this.shields.forEach(s => {
             let sp = project(this.x + Math.cos(s.a)*250, this.y + Math.sin(s.a)*250, this.z);
@@ -1325,7 +1462,6 @@ class BossCore {
             }
         });
 
-        let sRadius = this.radius * p.s;
         ctx.strokeStyle = this.hitTimer > 0 ? '#fff' : '#f00';
         ctx.beginPath(); ctx.arc(p.x, p.y, sRadius, 0, Math.PI*2); ctx.stroke();
         
@@ -1346,14 +1482,11 @@ class PowerUp {
     }
     update() {
         if (player.isRespawning) return;
-        // MENOR VELOCIDAD Y MOVIMIENTO CONSTANTE PARA QUE NO SE SIENTA MAGNÉTICO
+        
         this.z -= SPEED * 0.6; 
         this.y += Math.sin(frames*0.1)*2; 
         if (this.z < -FOV) this.active = false;
 
-        // Eliminada la atracción magnética. El jugador debe tocarlo físicamente.
-        
-        // Detección de colisión más estricta
         if (this.active && Math.abs(this.z - player.z) < 100 && Math.abs(this.x - player.x) < 100 && Math.abs(this.y - player.y) < 100) {
             AudioSys.sfx.powerup();
             
@@ -1446,7 +1579,7 @@ let player;
 function addScore(pts) {
     score += pts;
     document.getElementById('score').innerText = score;
-    difficulty = 1 + (Game.level * 0.5) + Math.floor(score / 1000) * 0.1;
+    difficulty = 1 + (Game.level * 0.2) + Math.floor(score / 2000) * 0.1; // Crecimiento más leve
 }
 
 function addComboScore(pts) {
@@ -1537,22 +1670,25 @@ function update() {
 
     // Spawn Dinámico
     if (!Game.boss && Game.warpTimer <= 0 && (!player || !player.isRespawning)) {
-        if (frames % Math.max(15, Math.floor(60 / difficulty)) === 0 && Math.random() > 0.3) {
+        // Reducida la frecuencia base y aumentada la exigencia del random para menos densidad de enemigos
+        if (frames % Math.max(30, Math.floor(90 / difficulty)) === 0 && Math.random() > 0.5) {
             
             let r = Math.random();
             let eType = 'flyer';
             let spawnY = -Math.random() * 450 + 50; 
             let spawnX = (Math.random()-0.5)*1200;
             
-            if (r < 0.2) {
+            if (r < 0.15) {
                 eType = 'tower';
                 spawnY = 150; 
                 spawnX = (Math.random()-0.5)*1800; 
-            } else if (r < 0.45) {
+            } else if (r < 0.35) {
                 eType = 'crawler';
                 spawnY = 100; 
-            } else if (r < 0.65) {
+            } else if (r < 0.55) {
                 eType = 'morph';
+            } else if (r < 0.75) {
+                eType = 'orbiter';
             }
             
             Game.entities.push(new Enemy(spawnX, spawnY, Z_LIMIT, eType));
