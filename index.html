@@ -52,7 +52,7 @@
         .hud-box {
             background: rgba(0, 10, 0, 0.6);
             padding: 10px 15px;
-            border: 1px solid; /* Líneas finas */
+            border: 1px solid; 
             min-width: 140px;
             backdrop-filter: blur(2px);
         }
@@ -85,7 +85,7 @@
 
         .panel {
             background: rgba(0, 5, 0, 0.85);
-            border: 1px solid #0ff; /* Minimalista vectorial */
+            border: 1px solid #0ff; 
             padding: 40px;
             display: flex;
             flex-direction: column;
@@ -100,7 +100,7 @@
             font-size: 36px;
             margin-bottom: 10px;
             color: #fff;
-            text-shadow: 2px 2px 0px #f00, -2px -2px 0px #0ff; /* Reducido el glow */
+            text-shadow: 2px 2px 0px #f00, -2px -2px 0px #0ff; 
             letter-spacing: 2px;
             line-height: 1.2;
         }
@@ -188,12 +188,25 @@
             #mobile-controls { display: none !important; }
         }
 
+        /* Ajustes responsivos para que nada choque */
         @media (max-width: 600px) {
             .title-glitch { font-size: 20px; }
             .panel { padding: 20px; }
-            .hud-box { padding: 8px 10px; min-width: 120px; }
+            
+            #ui-layer { font-size: 8px; top: 10px; left: 10px; right: 10px; }
+            
+            .hud-box { padding: 6px 8px; min-width: 0; width: auto; font-size: 8px; }
+            
+            .ui-block:nth-child(2) {
+                position: absolute;
+                top: 50px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 100%;
+                text-align: center;
+            }
+
             .start-btn { padding: 12px 20px; font-size: 12px; }
-            #ui-layer { font-size: 9px; top: 10px; left: 10px; right: 10px; }
             .controls-desc { font-size: 9px !important; }
             .name-input { width: 180px; font-size: 12px; }
             #mute-btn { font-size: 24px; bottom: 20px; left: 10px; }
@@ -209,19 +222,22 @@
     <div id="mute-btn" title="Toggle Sound">🔊</div>
 
     <div id="ui-layer" class="hidden">
+        <!-- Izquierda -->
         <div class="ui-block hud-box border-cyan">
             <div class="cyan-text">SCORE: <span id="score" class="white-text">0</span></div>
-            <div class="cyan-text" style="margin-top: 10px; font-size: 9px;">LIVES: <span id="lives-count" class="white-text">3</span></div>
-            <div id="combo-display" class="yellow-text" style="font-size: 9px; margin-top: 8px;"></div>
+            <div class="cyan-text" style="margin-top: 10px;">LIVES: <span id="lives-count" class="white-text">3</span></div>
+            <div id="combo-display" class="yellow-text" style="margin-top: 8px;"></div>
         </div>
-        <div class="ui-block" style="text-align: center; padding-top: 10px;">
-            <div id="warning-text" class="red-text blink hidden" style="font-size: 16px;">WARNING</div>
-            <div id="warp-text" class="cyan-text blink hidden" style="font-size: 16px;">WARP SPEED</div>
-            <div id="level-display" class="cyan-text" style="font-size: 12px; margin-top: 10px;">SECTOR: 1</div>
+        <!-- Centro (Flotante en móviles) -->
+        <div class="ui-block" style="text-align: center; padding-top: 5px;">
+            <div id="warning-text" class="red-text blink hidden" style="font-size: 14px;">WARNING</div>
+            <div id="warp-text" class="cyan-text blink hidden" style="font-size: 14px;">WARP SPEED</div>
+            <div id="level-display" class="cyan-text" style="font-size: 10px; margin-top: 5px;">SECTOR: 1</div>
         </div>
+        <!-- Derecha -->
         <div class="ui-block hud-box border-green" style="text-align: right;">
             <div class="cyan-text">SHIELD: <span id="hp" class="white-text">100</span>%</div>
-            <div class="cyan-text" style="margin-top: 15px; font-size: 9px;">EMP (B): <span id="emp-count" class="white-text">3</span></div>
+            <div class="cyan-text" style="margin-top: 15px;">EMP (B): <span id="emp-count" class="white-text">3</span></div>
         </div>
     </div>
 
@@ -481,6 +497,10 @@ let BASE_SPEED = 12, SPEED = 12;
 let gameLoopId, frames = 0, score = 0, difficulty = 1;
 let screenShake = 0, combo = 0, multiplier = 1, emps = 3, nextBossScore = 3000;
 
+// LIMITADOR FPS
+let lastTime = 0;
+const FPS_INTERVAL = 1000 / 60; 
+
 const Game = {
     state: 'START', level: 1, warpTimer: 0, flashAlpha: 0, playerDeathTimer: 0,
     lives: 3, bossDeathTimer: 0,
@@ -503,7 +523,7 @@ window.addEventListener('keyup', e => {
     if(e.code==='KeyB') keys.b = false;
 });
 
-// Controles Táctiles (Arraste y Auto-Fire)
+// Controles Táctiles
 let touchActive = false;
 let touchStartX = 0, touchStartY = 0;
 
@@ -525,8 +545,8 @@ window.addEventListener('touchmove', (e) => {
         let dy = currentY - touchStartY;
         
         if (player && !player.isRespawning) {
-            player.x += dx * 3.5;
-            player.y += dy * 3.5;
+            player.x += dx * 1.5; 
+            player.y += dy * 1.5;
         }
         
         touchStartX = currentX;
@@ -541,7 +561,7 @@ window.addEventListener('touchend', (e) => {
 const empBtn = document.getElementById('btn-m-emp');
 if (empBtn) empBtn.addEventListener('touchstart', (e) => { e.preventDefault(); EMP.trigger(); });
 
-// Proyección 3D
+// Proyección 3D Verdadera
 function project(x, y, z) {
     if (z <= -FOV) z = -FOV + 0.1;
     const scale = FOV / (FOV + z);
@@ -588,7 +608,6 @@ const WarpTunnel = {
     }
 };
 
-// ENTORNO SUBTERRANEO CIBERNETICO PARA NIVEL 3
 const CaveSystem = {
     rings: [], numPoints: 8, baseRadius: 600,
     init() {
@@ -813,7 +832,11 @@ class Player {
     constructor() {
         this.x = 0; this.y = -50; this.z = 100; this.vx = 0; this.vy = 0;
         this.hp = 100; this.maxHp = 100;
-        this.lastShot = 0; this.radius = 35; this.dashCooldown = 0;
+        this.lastShot = 0; 
+        
+        this.radius = IS_MOBILE ? 24 : 38; 
+        
+        this.dashCooldown = 0;
         this.weaponLevel = 1; this.weaponTimer = 0; this.hitTimer = 0;
         this.isRespawning = false; 
         this.invulnerableTimer = 0;
@@ -896,43 +919,53 @@ class Player {
         if (this.isRespawning) return;
         if (this.invulnerableTimer > 0 && frames % 6 < 3) return;
 
-        let p = project(this.x, this.y, this.z);
-        if (p.z < -FOV) return;
-        let size = this.radius * p.s;
+        let s = this.radius * 1.5; 
+        // Helper para proyectar los vertices de forma realista hacia el fondo Z
+        let pt = (dx, dy, dz) => project(this.x + dx, this.y + dy, this.z + dz);
+
+        // Vértices 3D verdaderos apuntando HASTA EL FONDO (Z aumenta)
+        let n = pt(0, -s*0.2, s * 2.5); // Nose (lejos)
+        let bl = pt(-s * 0.7, s * 0.4, -s); // Back Left (cerca)
+        let br = pt(s * 0.7, s * 0.4, -s); // Back Right
+        let bt = pt(0, -s * 0.6, -s); // Back Top
+        let c = pt(0, -s * 0.4, s * 0.5); // Cabina central
+
+        let wl = pt(-s * 2, s * 0.2, -s * 0.2); // Wing Left
+        let wr = pt(s * 2, s * 0.2, -s * 0.2); // Wing Right
 
         ctx.strokeStyle = this.hitTimer > 0 ? '#f00' : '#fff';
-        ctx.lineWidth = 1.5; 
+        ctx.lineWidth = 1.5;
+
+        // Dibujar Fuselaje Central 3D
+        ctx.beginPath();
+        ctx.moveTo(n.x, n.y); ctx.lineTo(bl.x, bl.y);
+        ctx.lineTo(br.x, br.y); ctx.lineTo(n.x, n.y);
+        ctx.moveTo(n.x, n.y); ctx.lineTo(bt.x, bt.y);
+        ctx.lineTo(bl.x, bl.y); ctx.moveTo(bt.x, bt.y); ctx.lineTo(br.x, br.y);
         
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y - size * 1.8);
-        ctx.lineTo(p.x + size * 1.5, p.y + size * 0.8);
-        ctx.lineTo(p.x + size * 0.5, p.y + size * 0.4);
-        ctx.lineTo(p.x + size * 0.6, p.y + size * 1.2);
-        ctx.lineTo(p.x, p.y + size * 0.8);
-        ctx.lineTo(p.x - size * 0.6, p.y + size * 1.2);
-        ctx.lineTo(p.x - size * 0.5, p.y + size * 0.4);
-        ctx.lineTo(p.x - size * 1.5, p.y + size * 0.8);
-        ctx.closePath();
+        // Cabina
+        ctx.moveTo(c.x, c.y); ctx.lineTo(bl.x, bl.y);
+        ctx.moveTo(c.x, c.y); ctx.lineTo(br.x, br.y);
         ctx.stroke();
 
+        // Alas 3D
         ctx.beginPath();
-        ctx.moveTo(p.x, p.y - size * 1.8); ctx.lineTo(p.x, p.y + size * 0.8);
-        ctx.moveTo(p.x - size*0.5, p.y + size*0.4); ctx.lineTo(p.x + size*0.5, p.y + size*0.4);
+        let wlBase = pt(-s*0.4, s*0.2, s*0.5);
+        let wrBase = pt(s*0.4, s*0.2, s*0.5);
+        ctx.moveTo(bl.x, bl.y); ctx.lineTo(wl.x, wl.y); ctx.lineTo(wlBase.x, wlBase.y);
+        ctx.moveTo(br.x, br.y); ctx.lineTo(wr.x, wr.y); ctx.lineTo(wrBase.x, wrBase.y);
         ctx.stroke();
 
+        // Motor y Fuego mirando hacia "atrás" (Hacia la cámara)
         if (Game.state === 'PLAYING') {
-            let thrust = size * (0.5 + Math.random() * 0.8); 
+            let thrust = s * (1 + Math.random() * 1.5);
+            let f = pt(0, s*0.2, -s - thrust); 
+            
             ctx.strokeStyle = '#0ff';
             ctx.beginPath();
-            ctx.moveTo(p.x - size * 0.4, p.y + size * 1.2);
-            ctx.lineTo(p.x - size * 0.1, p.y + size * 1.2 + thrust);
-            ctx.lineTo(p.x - size * 0.2, p.y + size * 1.0);
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.moveTo(p.x + size * 0.4, p.y + size * 1.2);
-            ctx.lineTo(p.x + size * 0.1, p.y + size * 1.2 + thrust);
-            ctx.lineTo(p.x + size * 0.2, p.y + size * 1.0);
+            ctx.moveTo(bl.x, bl.y); ctx.lineTo(f.x, f.y);
+            ctx.lineTo(br.x, br.y);
+            ctx.moveTo(bt.x, bt.y); ctx.lineTo(f.x, f.y);
             ctx.stroke();
         }
     }
@@ -1101,22 +1134,47 @@ function triggerBossDeath(boss) {
 class BossWorm {
     constructor() {
         this.segments = []; this.numSegments = 12; this.active = true; 
-        this.hp = 1500; this.maxHp = 1500; this.timer = 0; this.x=0; this.y=-200; this.z=Z_LIMIT;
+        this.hp = 1500; this.maxHp = 1500; this.timer = 0; 
+        this.x = 0; this.y = -200; this.z = Z_LIMIT;
+        this.history = []; // Historial para movimiento de serpiente perfecto
+        
         VoiceSys.speak("Warning. Devourer class entity detected.");
-        for(let i=0; i<this.numSegments; i++) this.segments.push({ x: 0, y: -200, z: Z_LIMIT + i*100, radius: i===0?80:50-(i*2), hitTimer: 0 });
+        for(let i=0; i<this.numSegments; i++) {
+            this.segments.push({ x: 0, y: -200, z: Z_LIMIT + i*100, radius: i===0?80:50-(i*2), hitTimer: 0 });
+        }
     }
     update() {
         if (player.isRespawning && !this.isDying) return;
         this.timer++;
+        
         let head = this.segments[0];
-        head.x += (Math.sin(this.timer*0.03)*400 - head.x) * 0.05;
-        head.y += (-200 + Math.cos(this.timer*0.05)*150 - head.y) * 0.05;
-        head.z += (400 + Math.sin(this.timer*0.02)*200 - head.z) * 0.05;
+        
+        // Curva de Lissajous salvaje para la cabeza (Retorcimiento caótico)
+        let targetX = Math.sin(this.timer * 0.05) * 600 + Math.sin(this.timer * 0.02) * 200;
+        let targetY = Math.cos(this.timer * 0.04) * 300 + Math.sin(this.timer * 0.07) * 100 - 100;
+        let targetZ = 300 + Math.sin(this.timer * 0.03) * 300; 
+
+        head.x += (targetX - head.x) * 0.1;
+        head.y += (targetY - head.y) * 0.1;
+        head.z += (targetZ - head.z) * 0.1;
         this.x = head.x; this.y = head.y; this.z = head.z; 
 
+        // Actualizar el historial de posiciones de la cabeza
+        this.history.unshift({x: head.x, y: head.y, z: head.z});
+        if (this.history.length > this.numSegments * 5 + 1) {
+            this.history.pop();
+        }
+
+        // Segmentos del cuerpo siguen exactamente a la cabeza con retraso
         for(let i=1; i<this.numSegments; i++) {
-            let seg = this.segments[i], prev = this.segments[i-1];
-            seg.x += (prev.x - seg.x) * 0.3; seg.y += (prev.y - seg.y) * 0.3; seg.z += (prev.z + 100 - seg.z) * 0.3;
+            let histIndex = Math.min(i * 5, this.history.length - 1);
+            let histPos = this.history[histIndex];
+            if (histPos) {
+                let seg = this.segments[i];
+                seg.x += (histPos.x - seg.x) * 0.5;
+                seg.y += (histPos.y - seg.y) * 0.5;
+                seg.z += (histPos.z - seg.z) * 0.5;
+            }
         }
 
         for(let seg of this.segments) if (seg.hitTimer > 0) seg.hitTimer--;
@@ -1288,16 +1346,15 @@ class PowerUp {
     }
     update() {
         if (player.isRespawning) return;
-        this.z -= SPEED * 1.2; 
+        // MENOR VELOCIDAD Y MOVIMIENTO CONSTANTE PARA QUE NO SE SIENTA MAGNÉTICO
+        this.z -= SPEED * 0.6; 
         this.y += Math.sin(frames*0.1)*2; 
         if (this.z < -FOV) this.active = false;
 
-        if (Math.abs(this.z - player.z) < 400) {
-            this.x += (player.x - this.x) * 0.08;
-            this.y += (player.y - this.y) * 0.08;
-        }
-
-        if (this.active && Math.abs(this.z - player.z) < 150 && Math.abs(this.x - player.x) < 180 && Math.abs(this.y - player.y) < 180) {
+        // Eliminada la atracción magnética. El jugador debe tocarlo físicamente.
+        
+        // Detección de colisión más estricta
+        if (this.active && Math.abs(this.z - player.z) < 100 && Math.abs(this.x - player.x) < 100 && Math.abs(this.y - player.y) < 100) {
             AudioSys.sfx.powerup();
             
             if (this.type === 'heal') {
@@ -1411,7 +1468,7 @@ function startWarp() {
 }
 
 /**
- * BUCLE PRINCIPAL Y LÓGICA DE SPAWN
+ * BUCLE PRINCIPAL Y LÓGICA DE SPAWN CON CONTROL DE FRAMERATE (60FPS CONSTANTES)
  */
 function update() {
     frames++;
@@ -1479,7 +1536,6 @@ function update() {
     }
 
     // Spawn Dinámico
-    // ACTUALIZACIÓN DE PUNTAJE A 3000 PARA PRIMER JEFE
     if (!Game.boss && Game.warpTimer <= 0 && (!player || !player.isRespawning)) {
         if (frames % Math.max(15, Math.floor(60 / difficulty)) === 0 && Math.random() > 0.3) {
             
@@ -1601,10 +1657,19 @@ function render() {
     ctx.restore();
 }
 
-function gameLoop() {
+function gameLoop(currentTime) {
     if (Game.state !== 'PLAYING') return;
-    update(); render();
     gameLoopId = requestAnimationFrame(gameLoop);
+    
+    // LIMITADOR A 60 FPS EXACTOS PARA PANTALLAS DE 120HZ
+    if (!lastTime) lastTime = currentTime;
+    const deltaTime = currentTime - lastTime;
+    
+    if (deltaTime >= FPS_INTERVAL) {
+        lastTime = currentTime - (deltaTime % FPS_INTERVAL);
+        update();
+        render();
+    }
 }
 
 function startGame() {
@@ -1635,7 +1700,9 @@ function startGame() {
     document.getElementById('lives-count').innerText = Game.lives;
     document.getElementById('level-display').innerText = `SECTOR: 1`;
     
-    Game.state = 'PLAYING'; gameLoop();
+    Game.state = 'PLAYING'; 
+    lastTime = 0; 
+    gameLoopId = requestAnimationFrame(gameLoop);
 }
 
 function endGame(victory = false) {
