@@ -280,7 +280,6 @@ const VoiceSys = {
 
 /**
  * SINTETIZADOR MUSICAL (CHIPTUNE ÉPICO)
- * Secuencias más largas (64 pasos) para evitar monotonía.
  */
 const AudioSys = (function() {
     let ctx = null, masterGain = null, isPlaying = false;
@@ -291,16 +290,13 @@ const AudioSys = (function() {
     const C4=262, D4=294, Eb4=311, E4=330, F4=349, Fs4=370, G4=392, Ab4=415, A4=440, Bb4=466, B4=494;
     const C5=523, D5=587, Eb5=622, E5=659, F5=698;
 
-    // -----------------------------------------------------
     // MÚSICA NORMAL: Sinfonía N° 9 (Del Nuevo Mundo) - Dvořák
-    // Épico, marcado, pesado (100 BPM aprox)
     const MELODY_NORMAL = [
         E4, 0, G4, 0, E4, 0, E4, 0,  D4, 0, C4, 0, D4, 0, B3, 0,
         E4, 0, G4, 0, A4, 0, G4, 0,  E4, 0, E4, 0, E4, 0,  0, 0,
         E4, 0, G4, 0, E4, 0, E4, 0,  D4, 0, C4, 0, D4, 0, B3, 0,
         E4, 0, D4, 0, C4, 0, B3, 0,  A3, 0, A3, 0, A3, 0,  0, 0
     ];
-    // Bajo de marcha para Dvořák
     const BASS_NORMAL = [
         E3, 0, E3, 0, E3, 0, E3, 0,  D3, 0, D3, 0, D3, 0, G3, 0,
         C3, 0, C3, 0, C3, 0, C3, 0,  E3, 0, E3, 0, E3, 0, E3, 0,
@@ -308,16 +304,13 @@ const AudioSys = (function() {
         C3, 0, B3, 0, A3, 0, G3, 0,  A3, 0, A3, 0, A3, 0, A3, 0
     ];
 
-    // -----------------------------------------------------
-    // MÚSICA DE JEFE: Arpegios Menores estilo Vivaldi/Castlevania
-    // Extremadamente rápido y tenso (150 BPM aprox)
+    // MÚSICA DE JEFE: Arpegios Menores
     const MELODY_BOSS = [
         C4, Eb4, G4, C5, G4, Eb4, C4, Eb4,  C4, Eb4, G4, C5, G4, Eb4, C4, Eb4,
         D4, F4, Ab4, D5, Ab4, F4, D4, F4,   D4, F4, Ab4, D5, Ab4, F4, D4, F4,
         Eb4, G4, C5, Eb5, C5, G4, Eb4, G4,  Eb4, G4, C5, Eb5, C5, G4, Eb4, G4,
         D4, F4, Ab4, D5, Ab4, F4, D4, B3,   D4, F4, Ab4, D5, Ab4, F4, D4, B3
     ];
-    // Bajo pedal frenético
     const BASS_BOSS = [
         C3, 0, C3, 0, C3, 0, C3, 0,  C3, 0, C3, 0, C3, 0, C3, 0,
         D3, 0, D3, 0, D3, 0, D3, 0,  D3, 0, D3, 0, D3, 0, D3, 0,
@@ -510,10 +503,11 @@ window.addEventListener('touchend', (e) => {
 const empBtn = document.getElementById('btn-m-emp');
 if (empBtn) empBtn.addEventListener('touchstart', (e) => { e.preventDefault(); EMP.trigger(); });
 
+// Función de proyección 3D corregida para retornar 'z'
 function project(x, y, z) {
     if (z <= -FOV) z = -FOV + 0.1;
     const scale = FOV / (FOV + z);
-    return { x: x * scale + halfWidth, y: (y - CAMERA_Y) * scale + halfHeight, s: scale };
+    return { x: x * scale + halfWidth, y: (y - CAMERA_Y) * scale + halfHeight, s: scale, z: z };
 }
 
 // EMP SUPER WEAPON
@@ -703,34 +697,60 @@ const Env = {
     }
 };
 
+// SISTEMA DE ESTRELLAS MEJORADO
 const Stars = {
     particles: [],
     init() {
         this.particles = [];
-        for(let i=0; i<400; i++) this.particles.push({x: (Math.random()-0.5)*3000, y: (Math.random()-0.5)*2000, z: Math.random()*Z_LIMIT});
+        // Más densidad y atributos para efecto inmersivo
+        for(let i=0; i<800; i++) {
+            this.particles.push({
+                x: (Math.random()-0.5)*4000, 
+                y: (Math.random()-0.5)*4000, 
+                z: Math.random()*Z_LIMIT,
+                baseSize: Math.random() * 2.5 + 0.5,
+                color: Math.random() > 0.8 ? '#aff' : (Math.random() > 0.6 ? '#ffa' : '#fff')
+            });
+        }
     },
     updateAndDraw(ctx) {
-        let color = '#fff';
-        if (Game.level >= 3) color = (frames % 10 < 5) ? '#f0f' : '#0ff'; 
-        if (Game.boss && Game.boss.active) color = '#faa';
+        let overrideColor = null;
+        if (Game.level >= 3) overrideColor = (frames % 10 < 5) ? '#f0f' : '#0ff'; 
+        if (Game.boss && Game.boss.active) overrideColor = '#faa';
 
         this.particles.forEach(s => {
-            let currentSpeed = SPEED * (Game.warpTimer > 0 ? 4 : 1.5);
+            let currentSpeed = SPEED * (Game.warpTimer > 0 ? 5 : 1.8);
             if (!player || !player.isDying) s.z -= currentSpeed;
             
-            if (s.z < -FOV) { s.z = Z_LIMIT; s.x = (Math.random()-0.5)*3000; s.y = (Math.random()-0.5)*2000; }
+            // Loop continuo
+            if (s.z < -FOV + 10) { 
+                s.z = Z_LIMIT; 
+                s.x = (Math.random()-0.5)*4000; 
+                s.y = (Math.random()-0.5)*4000; 
+            }
+            
             let p = project(s.x, s.y, s.z);
             
             if (p.z >= -FOV && p.s > 0) {
-                ctx.globalAlpha = Math.max(0.1, Math.min(1, (1 - s.z/Z_LIMIT)));
+                ctx.globalAlpha = Math.max(0.1, 1 - (s.z/Z_LIMIT));
+                let c = overrideColor || s.color;
                 
-                let p2 = project(s.x, s.y, s.z + currentSpeed * 2);
-                ctx.strokeStyle = color; 
-                ctx.lineWidth = Math.max(0.5, 2 * p.s);
+                // Efecto de estela por velocidad
+                let trailZ = s.z + currentSpeed * 2.5;
+                let p2 = project(s.x, s.y, trailZ);
+                
+                ctx.strokeStyle = c; 
+                ctx.lineWidth = Math.max(0.5, s.baseSize * p.s);
                 ctx.beginPath(); 
                 ctx.moveTo(p.x, p.y); 
                 ctx.lineTo(p2.x, p2.y); 
                 ctx.stroke();
+
+                // Punto central brillante de la estrella
+                ctx.fillStyle = c;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, s.baseSize * p.s, 0, Math.PI*2);
+                ctx.fill();
             }
         });
         ctx.globalAlpha = 1.0;
