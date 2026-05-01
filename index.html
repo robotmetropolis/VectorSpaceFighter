@@ -197,17 +197,15 @@
             
             .hud-box { padding: 6px 8px; min-width: 0; width: auto; font-size: 8px; }
             
-            /* Reposicionamiento del bloque central para que no toque las cajas */
             .ui-block:nth-child(2) {
                 position: absolute;
-                top: 75px; /* Empujado hacia abajo */
+                top: 75px; 
                 left: 50%;
                 transform: translateX(-50%);
                 width: 100%;
                 text-align: center;
             }
 
-            /* Reducción forzada de textos en el HUD central */
             #warning-text, #warp-text { font-size: 11px !important; }
             #level-display { font-size: 9px !important; margin-top: 2px !important; }
 
@@ -223,33 +221,27 @@
 
     <div id="crt-overlay"></div>
     
-    <!-- Botón Global de Sonido -->
     <div id="mute-btn" title="Toggle Sound">🔊</div>
 
     <div id="ui-layer" class="hidden">
-        <!-- Izquierda -->
         <div class="ui-block hud-box border-cyan">
             <div class="cyan-text">SCORE: <span id="score" class="white-text">0</span></div>
             <div class="cyan-text" style="margin-top: 10px;">LIVES: <span id="lives-count" class="white-text">3</span></div>
             <div id="combo-display" class="yellow-text" style="margin-top: 8px;"></div>
         </div>
-        <!-- Centro (Flotante en móviles y ajustado) -->
         <div class="ui-block" style="text-align: center; padding-top: 5px;">
             <div id="warning-text" class="red-text blink hidden" style="font-size: 14px;">WARNING</div>
             <div id="warp-text" class="cyan-text blink hidden" style="font-size: 14px;">WARP SPEED</div>
             <div id="level-display" class="cyan-text" style="font-size: 10px; margin-top: 5px;">SECTOR: 1</div>
         </div>
-        <!-- Derecha -->
         <div class="ui-block hud-box border-green" style="text-align: right;">
             <div class="cyan-text">SHIELD: <span id="hp" class="white-text">100</span>%</div>
             <div class="cyan-text" style="margin-top: 15px;">EMP (B): <span id="emp-count" class="white-text">3</span></div>
         </div>
     </div>
 
-    <!-- Controles Móviles (Solo botón EMP) -->
     <div id="mobile-controls" class="hidden">
         <div class="btn-emp" id="btn-m-emp">
-            <!-- Icono Vectorial de Bomba / Explosión -->
             <svg width="40" height="40" viewBox="0 0 100 100" stroke="#ff0" stroke-width="8" fill="none" style="pointer-events: none;">
                 <circle cx="50" cy="50" r="25"/>
                 <circle cx="50" cy="50" r="8" fill="#ff0"/>
@@ -258,7 +250,6 @@
         </div>
     </div>
 
-    <!-- PANTALLA INICIO -->
     <div id="start-screen">
         <img id="bg-image" src="Gemini_Generated_Image_f00wd1f00wd1f00w.png" onerror="this.style.display='none'">
         
@@ -280,7 +271,6 @@
         </div>
     </div>
 
-    <!-- PANTALLA GAME OVER -->
     <div id="game-over-screen" class="hidden">
         <div class="panel" style="border-color: #f00;">
             <h1 class="red-text title-glitch" style="text-shadow: 2px 2px 0px #f0f; margin: 0;">M.I.A.</h1>
@@ -292,7 +282,6 @@
         </div>
     </div>
 
-    <!-- PANTALLA VICTORIA -->
     <div id="victory-screen" class="hidden">
         <div class="panel" style="border-color: #0ff;">
             <h1 class="cyan-text title-glitch" style="margin: 0;">SYSTEM PURGED</h1>
@@ -308,19 +297,9 @@
     <canvas id="gameCanvas"></canvas>
 
 <script>
-/**
- * ESTADO GLOBAL
- */
 let IS_MUTED = false;
-
-/**
- * DETECCIÓN DISPOSITIVO MÓVIL
- */
 const IS_MOBILE = ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
-/**
- * DATOS PERSISTENTES (HIGHSCORE CON NOMBRE)
- */
 const Meta = {
     data: JSON.parse(localStorage.getItem('vsr_highScoreData')) || { name: 'ACE', score: 0 },
     save(name, score) {
@@ -341,9 +320,6 @@ const VoiceSys = {
     }
 };
 
-/**
- * SINTETIZADOR MUSICAL (CHIPTUNE ÉPICO)
- */
 const AudioSys = (function() {
     let ctx = null, masterGain = null, isPlaying = false;
     let nextNoteTime = 0, step = 0, timerID;
@@ -454,9 +430,7 @@ const AudioSys = (function() {
         hit: () => noiseBurst(0.15, 0.4),
         explosion: () => { noiseBurst(0.4, 0.6); playTone(100, 'sine', 0.5, 0.7, 0, 50); },
         emp: () => { 
-            // Carga de energía inicial
             playTone(800, 'sine', 0.3, 0.8, 0, 1500); 
-            // Mega explosión de larga duración
             setTimeout(() => {
                 noiseBurst(3.0, 1.0); 
                 playTone(150, 'sawtooth', 3.0, 1.0, 0, 10);
@@ -489,7 +463,6 @@ const AudioSys = (function() {
     };
 })();
 
-// Lógica Botón Mute
 document.getElementById('mute-btn').addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -499,9 +472,6 @@ document.getElementById('mute-btn').addEventListener('click', (e) => {
     if (IS_MUTED && window.speechSynthesis) window.speechSynthesis.cancel();
 });
 
-/**
- * MOTOR DEL JUEGO Y GRÁFICOS 3D
- */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -518,7 +488,6 @@ let BASE_SPEED = 12, SPEED = 12;
 let gameLoopId, frames = 0, score = 0, difficulty = 1;
 let screenShake = 0, combo = 0, multiplier = 1, emps = 3, nextBossScore = 3000;
 
-// LIMITADOR FPS
 let lastTime = 0;
 const FPS_INTERVAL = 1000 / 60; 
 
@@ -528,7 +497,6 @@ const Game = {
     entities: [], particles: [], bullets: [], powerups: [], boss: null
 };
 
-// Controles
 const keys = { w:false, a:false, s:false, d:false, space:false, shift:false, b:false };
 window.addEventListener('keydown', e => {
     if(e.code==='KeyW'||e.code==='ArrowUp') keys.w = true; if(e.code==='KeyA'||e.code==='ArrowLeft') keys.a = true;
@@ -544,7 +512,6 @@ window.addEventListener('keyup', e => {
     if(e.code==='KeyB') keys.b = false;
 });
 
-// Controles Táctiles
 let touchActive = false;
 let touchStartX = 0, touchStartY = 0;
 
@@ -582,14 +549,12 @@ window.addEventListener('touchend', (e) => {
 const empBtn = document.getElementById('btn-m-emp');
 if (empBtn) empBtn.addEventListener('touchstart', (e) => { e.preventDefault(); EMP.trigger(); });
 
-// Proyección 3D Verdadera
 function project(x, y, z) {
     if (z <= -FOV) z = -FOV + 0.1;
     const scale = FOV / (FOV + z);
     return { x: x * scale + halfWidth, y: (y - CAMERA_Y) * scale + halfHeight, s: scale, z: z };
 }
 
-// EMP SUPER WEAPON
 const EMP = {
     active: false, timer: 0,
     trigger() {
@@ -599,7 +564,6 @@ const EMP = {
         VoiceSys.speak("Tactical Nuke Deployed");
         AudioSys.sfx.emp(); 
         
-        // Primera fase: Elimina los disparos al instante
         Game.bullets.forEach(b => { if(!b.isPlayer) b.active = false; });
     },
     updateAndDraw(ctx) {
@@ -607,27 +571,23 @@ const EMP = {
         this.timer++;
         let t = this.timer;
         
-        // Retraso para que encaje con el efecto de sonido de "Carga"
         if (t === 18) {
             screenShake = 60;
             Game.flashAlpha = 1.0;
-            // Destrucción masiva
             Game.entities.forEach(e => { if (e.hp) { e.hp -= 800; e.hitTimer = 15; if (e.hp <= 0 && e.destroy) e.destroy(); }});
             if (Game.boss && Game.boss.active && !Game.boss.isDying) { Game.boss.hp -= 1000; if(Game.boss.hp <= 0) triggerBossDeath(Game.boss); }
         }
 
-        // Efecto visual de ondas múltiples
         if (t > 18) {
             for(let i = 0; i < 6; i++) {
                 let r = ((t - 18) * 40) - (i * 180);
                 if (r > 0 && r < 4000) {
                     ctx.strokeStyle = `rgba(0, 255, 255, ${Math.max(0, 1 - r/3000)})`;
-                    ctx.lineWidth = 5 + (Math.random() * 20); // Líneas distorsionadas
+                    ctx.lineWidth = 5 + (Math.random() * 20); 
                     ctx.beginPath(); ctx.arc(halfWidth, halfHeight, r, 0, Math.PI*2); ctx.stroke();
                 }
             }
             
-            // Vibración continua y flash persistente
             if (t < 60 && t % 4 === 0) {
                 ctx.fillStyle = `rgba(255, 255, 255, 0.15)`;
                 ctx.fillRect(0, 0, width, height);
@@ -635,7 +595,6 @@ const EMP = {
             }
         }
         
-        // Duración total prolongada
         if (t > 150) {
             this.active = false;
         }
@@ -869,7 +828,6 @@ class Bullet {
         let p = project(this.x, this.y, this.z);
         if (p.z < -FOV) return;
         
-        // Balas enemigas muy visibles (Rojas con núcleo blanco)
         ctx.fillStyle = this.isPlayer ? '#0ff' : '#f00';
         ctx.shadowBlur = 10;
         ctx.shadowColor = ctx.fillStyle;
@@ -882,7 +840,6 @@ class Bullet {
         }
         ctx.fill();
 
-        // Núcleo central
         ctx.fillStyle = '#fff';
         ctx.shadowBlur = 0;
         ctx.beginPath();
@@ -989,7 +946,6 @@ class Player {
         let s = this.radius; 
         let pt = (dx, dy, dz) => project(this.x + dx, this.y + dy, this.z + dz);
 
-        // NAVE MÁS COMPACTA Y ANCHA
         let n = pt(0, -s*0.2, s * 1.5); 
         let bl = pt(-s * 1.2, s * 0.4, -s*0.5); 
         let br = pt(s * 1.2, s * 0.4, -s*0.5); 
@@ -1004,25 +960,21 @@ class Player {
         ctx.strokeStyle = this.hitTimer > 0 ? '#f00' : '#fff';
         ctx.lineWidth = 1.5;
 
-        // Fuselaje Central
         ctx.beginPath();
         ctx.moveTo(n.x, n.y); ctx.lineTo(bl.x, bl.y);
         ctx.lineTo(br.x, br.y); ctx.lineTo(n.x, n.y);
         ctx.moveTo(n.x, n.y); ctx.lineTo(bt.x, bt.y);
         ctx.lineTo(bl.x, bl.y); ctx.moveTo(bt.x, bt.y); ctx.lineTo(br.x, br.y);
         
-        // Cabina
         ctx.moveTo(c.x, c.y); ctx.lineTo(bl.x, bl.y);
         ctx.moveTo(c.x, c.y); ctx.lineTo(br.x, br.y);
         ctx.stroke();
 
-        // Alas
         ctx.beginPath();
         ctx.moveTo(bl.x, bl.y); ctx.lineTo(wl.x, wl.y); ctx.lineTo(wlBase.x, wlBase.y);
         ctx.moveTo(br.x, br.y); ctx.lineTo(wr.x, wr.y); ctx.lineTo(wrBase.x, wrBase.y);
         ctx.stroke();
 
-        // Motores Poligonales
         if (Game.state === 'PLAYING') {
             let thrust = s * (1 + Math.random() * 1.5);
             let f = pt(0, s*0.2, -s*0.5 - thrust); 
@@ -1046,26 +998,25 @@ class Enemy {
         this.isSmall = false; 
         
         if (this.type === 'tower') {
-            this.hp = 45; // 3 tiros
+            this.hp = 45; 
             this.radius = 80;
             this.lastShot = frames + Math.random()*30;
         } else if (this.type === 'crawler') {
-            this.hp = 15; // 1 tiro
+            this.hp = 15; 
             this.radius = 45;
             this.lastShot = frames + Math.random()*40;
             this.xDir = Math.random() > 0.5 ? 1 : -1;
-        } else if (this.type === 'morph') { // Interceptor
-            this.hp = 30; // 2 tiros
+        } else if (this.type === 'morph') { 
+            this.hp = 30; 
             this.radius = 50;
             this.lastShot = frames + Math.random()*50;
         } else if (this.type === 'orbiter') {
-            this.hp = 30; // 2 tiros
+            this.hp = 30; 
             this.radius = 40;
             this.lastShot = frames + Math.random()*40;
-            this.zSpeedMult = 0.6; // Mucho más lento
+            this.zSpeedMult = 0.4; // Orbitadores más lentos
         } else {
-            // Flyer normal
-            this.hp = 15; // 1 tiro
+            this.hp = 15; 
             this.radius = 60;
             this.lastShot = frames + Math.random()*60;
             this.xDir = 0; 
@@ -1104,12 +1055,12 @@ class Enemy {
 
         if (this.z < -FOV) this.active = false;
 
+        // Ignorar Y en colisión de balas del jugador para experiencia Arcade
         for (let b of Game.bullets) {
             if (b.isPlayer && b.active) {
                 let hitAreaX = this.radius * (this.type === 'crawler' ? 3 : (this.type === 'tower' ? 1.5 : 2));
-                let hitAreaY = this.radius * (this.type === 'tower' ? 3.5 : 2.5);
                 
-                if (Math.abs(b.z - this.z) < 150 && Math.abs(b.x - this.x) < hitAreaX && Math.abs(b.y - this.y) < hitAreaY) {
+                if (Math.abs(b.z - this.z) < 150 && Math.abs(b.x - this.x) < hitAreaX) {
                     this.hp -= 15; this.hitTimer = 5; b.active = false;
                     if (this.hp <= 0) { this.destroy(); return; }
                 }
@@ -1151,7 +1102,6 @@ class Enemy {
         createStickExplosion(this.x, this.y, this.z, pColor, this.type === 'tower' ? 30 : 15);
         addComboScore(this.type === 'tower' ? 150 : 50);
         
-        // MECÁNICA DE SEPARACIÓN EN 2
         if (this.type === 'flyer' && !this.isSmall) {
             let e1 = new Enemy(this.x - 100, this.y, this.z, 'flyer');
             e1.isSmall = true; e1.radius = 35; e1.hp = 15; e1.maxHp = e1.hp; e1.xDir = -3;
@@ -1170,7 +1120,6 @@ class Enemy {
         if (p.z < -FOV) return;
         let s = this.radius * p.s;
 
-        // Barra de Salud 
         if (this.hp < this.maxHp && this.hp > 0 && this.maxHp > 15) {
             let hpRatio = this.hp / this.maxHp;
             let barY = p.y - s*1.5;
@@ -1193,7 +1142,6 @@ class Enemy {
         ctx.lineWidth = 1.5; 
         
         if (this.type === 'tower') {
-            // Diseño Clásico Torre Celosía
             let w = s * 0.8;
             let topW = s * 0.3;
             let h = s * 3;
@@ -1205,18 +1153,15 @@ class Enemy {
             ctx.stroke();
 
             ctx.beginPath();
-            // Celosía X interior
             ctx.moveTo(p.x - w, p.y + h); ctx.lineTo(p.x + w*0.75, p.y + h*0.25);
             ctx.moveTo(p.x + w, p.y + h); ctx.lineTo(p.x - w*0.75, p.y + h*0.25);
             ctx.moveTo(p.x - w*0.75, p.y + h*0.25); ctx.lineTo(p.x + w*0.5, p.y - h*0.5);
             ctx.moveTo(p.x + w*0.75, p.y + h*0.25); ctx.lineTo(p.x - w*0.5, p.y - h*0.5);
             
-            // Travesaños
             ctx.moveTo(p.x - w*0.75, p.y + h*0.25); ctx.lineTo(p.x + w*0.75, p.y + h*0.25);
             ctx.moveTo(p.x - w*0.5, p.y - h*0.5); ctx.lineTo(p.x + w*0.5, p.y - h*0.5);
             ctx.stroke();
 
-            // Luz parpadeante
             ctx.fillStyle = (frames % 20 < 10) ? '#f00' : '#fff';
             ctx.beginPath(); ctx.arc(p.x, p.y - h - s*0.2, s*0.2, 0, Math.PI*2); ctx.fill();
             
@@ -1229,7 +1174,6 @@ class Enemy {
             ctx.beginPath(); ctx.arc(p.x, p.y - s*0.5, s*0.4, 0, Math.PI*2); ctx.stroke(); 
             
         } else if (this.type === 'morph') {
-            // Foldable Interceptor Geométrico
             let fold = Math.sin(frames * 0.05); 
             let w = s * (1.5 + fold * 0.5); 
             let h = s * 0.8;
@@ -1241,33 +1185,27 @@ class Enemy {
             ctx.stroke();
 
             ctx.beginPath();
-            // Ala derecha
             ctx.moveTo(p.x + s*0.4, p.y); ctx.lineTo(p.x + w, p.y - h*1.5);
             ctx.lineTo(p.x + w, p.y + h*1.5); ctx.lineTo(p.x + s*0.4, p.y);
-            // Ala Izquierda
             ctx.moveTo(p.x - s*0.4, p.y); ctx.lineTo(p.x - w, p.y - h*1.5);
             ctx.lineTo(p.x - w, p.y + h*1.5); ctx.lineTo(p.x - s*0.4, p.y);
             ctx.stroke();
             
         } else if (this.type === 'orbiter') {
-            // Núcleo
             ctx.beginPath(); ctx.arc(p.x, p.y, s*0.6, 0, Math.PI*2); ctx.stroke();
             ctx.beginPath(); ctx.arc(p.x, p.y, s*0.3, 0, Math.PI*2); ctx.stroke();
             
-            // Órbitas y Espirales (Orbiting Stars)
             let numStars = 8;
             let spiral1 = s * (1.5 + Math.sin(frames * 0.05));
             let spiral2 = s * (1.5 + Math.cos(frames * 0.05));
 
             for (let i=0; i<numStars; i++) {
-                // Espiral Derecha
                 let a1 = frames * 0.05 + (i * Math.PI * 2 / numStars);
                 let sx1 = p.x + Math.cos(a1) * spiral1;
                 let sy1 = p.y + Math.sin(a1) * spiral1 * 0.3; 
                 ctx.fillStyle = '#0ff';
                 ctx.fillRect(sx1, sy1, 3, 3);
                 
-                // Espiral Izquierda
                 let a2 = -frames * 0.08 + (i * Math.PI * 2 / numStars);
                 let sx2 = p.x + Math.sin(a2) * spiral2;
                 let sy2 = p.y + Math.cos(a2) * spiral2 * 0.8;
@@ -1349,7 +1287,7 @@ class BossWorm {
                 if (b.isPlayer && b.active) {
                     for(let i=0; i<this.numSegments; i++) {
                         let seg = this.segments[i]; let hitArea = seg.radius * 2.5;
-                        if (Math.abs(b.z - seg.z) < 100 && Math.abs(b.x - seg.x) < hitArea && Math.abs(b.y - seg.y) < (hitArea * 1.5)) {
+                        if (Math.abs(b.z - seg.z) < 100 && Math.abs(b.x - seg.x) < hitArea) {
                             this.hp -= 15; seg.hitTimer = 5; b.active = false; break;
                         }
                     }
@@ -1404,7 +1342,7 @@ class BossMothership {
         if (!this.isDying) {
             for (let b of Game.bullets) {
                 if (b.isPlayer && b.active) {
-                    if (Math.abs(b.z - this.z) < 120 && Math.abs(b.x - this.x) < 300 && Math.abs(b.y - this.y) < 200) {
+                    if (Math.abs(b.z - this.z) < 120 && Math.abs(b.x - this.x) < 300) {
                         this.hp -= 15; this.hitTimer = 5; b.active = false;
                     }
                 }
@@ -1482,7 +1420,7 @@ class BossCore {
                     }
                     
                     if (blocked) { b.active = false; createStickExplosion(b.x, b.y, b.z, '#0ff', 3); }
-                    else if (Math.abs(b.x - this.x) < 150 && Math.abs(b.y - this.y) < 150) {
+                    else if (Math.abs(b.x - this.x) < 150) {
                         this.hp -= 15; this.hitTimer = 5; b.active = false;
                     }
                 }
@@ -1539,7 +1477,8 @@ class PowerUp {
         this.y += Math.sin(frames*0.1)*2; 
         if (this.z < -FOV) this.active = false;
 
-        if (this.active && Math.abs(this.z - player.z) < 100 && Math.abs(this.x - player.x) < 100 && Math.abs(this.y - player.y) < 100) {
+        // Ignorar el eje Y para la recolección
+        if (this.active && Math.abs(this.z - player.z) < 100 && Math.abs(this.x - player.x) < 200) {
             AudioSys.sfx.powerup();
             
             if (this.type === 'heal') {
@@ -1631,7 +1570,7 @@ let player;
 function addScore(pts) {
     score += pts;
     document.getElementById('score').innerText = score;
-    difficulty = 1 + (Game.level * 0.2) + Math.floor(score / 2000) * 0.1; // Crecimiento más leve
+    difficulty = 1 + (Game.level * 0.2) + Math.floor(score / 2000) * 0.1; 
 }
 
 function addComboScore(pts) {
@@ -1653,7 +1592,7 @@ function startWarp() {
 }
 
 /**
- * BUCLE PRINCIPAL Y LÓGICA DE SPAWN CON CONTROL DE FRAMERATE (60FPS CONSTANTES)
+ * BUCLE PRINCIPAL Y LÓGICA DE SPAWN
  */
 function update() {
     frames++;
@@ -1720,20 +1659,19 @@ function update() {
         SPEED = BASE_SPEED + (Game.level * 2);
     }
 
-    // Spawn Dinámico
+    // Spawn Dinámico (A mayor profundidad)
     if (!Game.boss && Game.warpTimer <= 0 && (!player || !player.isRespawning)) {
-        // Reducida la frecuencia base y aumentada la exigencia del random para menos densidad de enemigos
         if (frames % Math.max(30, Math.floor(90 / difficulty)) === 0 && Math.random() > 0.5) {
             
             let r = Math.random();
             let eType = 'flyer';
             let spawnY = -Math.random() * 450 + 50; 
-            let spawnX = (Math.random()-0.5)*1200;
+            // Límites en X (-500 a 500)
+            let spawnX = (Math.random()-0.5)*1000; 
             
             if (r < 0.15) {
                 eType = 'tower';
                 spawnY = 150; 
-                spawnX = (Math.random()-0.5)*1800; 
             } else if (r < 0.35) {
                 eType = 'crawler';
                 spawnY = 100; 
@@ -1743,10 +1681,11 @@ function update() {
                 eType = 'orbiter';
             }
             
-            Game.entities.push(new Enemy(spawnX, spawnY, Z_LIMIT, eType));
+            // Spawn a 150% de la visión
+            Game.entities.push(new Enemy(spawnX, spawnY, Z_LIMIT * 1.5, eType));
         }
         if (frames % 300 === 0 && Math.random() > 0.4) {
-            Game.powerups.push(new PowerUp((Math.random()-0.5)*800, (Math.random()-0.5)*200 - 100, Z_LIMIT));
+            Game.powerups.push(new PowerUp((Math.random()-0.5)*1000, (Math.random()-0.5)*200 - 100, Z_LIMIT * 1.5));
         }
 
         if (score >= nextBossScore && !Game.boss) {
@@ -1802,7 +1741,7 @@ function update() {
 }
 
 function render() {
-    ctx.fillStyle = '#050505'; // Fondo puro y limpio
+    ctx.fillStyle = '#050505'; 
     ctx.fillRect(0, 0, width, height);
 
     ctx.save();
@@ -1834,7 +1773,6 @@ function render() {
 
     Game.particles.forEach(p => p.draw(ctx));
     
-    // Destello
     if (Game.flashAlpha > 0) {
         ctx.fillStyle = `rgba(255, 255, 255, ${Game.flashAlpha})`;
         ctx.fillRect(-width, -height, width*3, height*3); 
@@ -1849,7 +1787,6 @@ function gameLoop(currentTime) {
     if (Game.state !== 'PLAYING') return;
     gameLoopId = requestAnimationFrame(gameLoop);
     
-    // LIMITADOR A 60 FPS EXACTOS PARA PANTALLAS DE 120HZ
     if (!lastTime) lastTime = currentTime;
     const deltaTime = currentTime - lastTime;
     
@@ -1875,7 +1812,6 @@ function startGame() {
     player = new Player(); Env.init(); Stars.init();
     score = 0; combo = 0; multiplier = 1; emps = 3; difficulty = 1; frames = 0; 
     
-    // PUNTAJE A 3000 PARA PRIMER JEFE
     Game.level = 1; nextBossScore = 3000; Game.warpTimer = 0; Game.lives = 3;
     
     Game.entities = []; Game.bullets = []; Game.particles = []; Game.powerups = []; Game.boss = null;
@@ -1913,13 +1849,11 @@ function endGame(victory = false) {
     cancelAnimationFrame(gameLoopId);
 }
 
-// Configuración inicial de HighScore
 document.getElementById('high-score-start').innerText = Meta.data.score;
 document.getElementById('high-score-name').innerText = `(${Meta.data.name})`;
 
 document.getElementById('start-btn').addEventListener('click', startGame);
 
-// Guardado de Score
 function saveAndRestart(inputId) {
     let name = document.getElementById(inputId).value || 'UNKNOWN';
     Meta.save(name, score);
