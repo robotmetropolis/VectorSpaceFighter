@@ -3,14 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vector Space Fighter - Arcade Edition</title>
+    <title>Vector Space Fighter - Epic Edition</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    
-    <!-- Librerías para procesar y reproducir MIDI en el navegador -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-    <script src="https://unpkg.com/@tonejs/midi"></script>
 
     <style>
         body {
@@ -86,22 +82,23 @@
             justify-content: center;
             align-items: center;
             z-index: 30;
-            background: rgba(0, 5, 0, 0.85);
+            background: rgba(0, 5, 0, 0.95);
             text-shadow: 0 0 15px #0f0;
-            backdrop-filter: blur(5px);
         }
 
-        /* FONDO DE PANTALLA DE INICIO BASADO EN IMAGEN SUBIDA */
-        #start-screen {
-            background: linear-gradient(rgba(0, 10, 0, 0.65), rgba(0, 15, 0, 0.85)), url('Gemini_Generated_Image_f00wd1f00wd1f00w.png');
-            background-size: cover;
-            background-position: center;
+        /* IMAGEN DE FONDO DEL POSTER */
+        #bg-image {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover;
+            z-index: -1;
+            opacity: 0.6; 
         }
 
         .panel {
-            background: rgba(0, 10, 0, 0.85);
+            background: rgba(0, 10, 0, 0.75);
             border: 4px solid #0ff;
-            padding: 50px;
+            padding: 40px;
             box-shadow: 0 0 50px rgba(0, 255, 255, 0.5), inset 0 0 20px rgba(0, 255, 255, 0.4);
             display: flex;
             flex-direction: column;
@@ -110,10 +107,11 @@
             width: 90%;
             text-align: center;
             border-radius: 10px;
+            backdrop-filter: blur(8px);
         }
 
         .title-glitch {
-            font-size: 40px;
+            font-size: 36px;
             margin-bottom: 10px;
             color: #fff;
             text-shadow: 4px 4px 0px #f00, -4px -4px 0px #0ff, 0 0 30px #fff;
@@ -131,14 +129,14 @@
         .yellow-text { color: #ff0; text-shadow: 0 0 10px #ff0; }
         
         .start-btn {
-            margin-top: 30px;
+            margin-top: 20px;
             cursor: pointer;
-            padding: 20px 40px;
+            padding: 15px 30px;
             background: #0ff;
             color: #000;
             border: none;
             font-family: 'Press Start 2P', cursive;
-            font-size: 20px;
+            font-size: 18px;
             box-shadow: 0 0 20px #0ff;
             transition: all 0.2s;
             text-transform: uppercase;
@@ -149,60 +147,40 @@
             transform: scale(1.05);
         }
         .start-btn:active:not(:disabled) { transform: scale(0.95); }
-        .start-btn:disabled { background: #555; color: #aaa; box-shadow: none; cursor: wait; animation: blinker 1s steps(2, start) infinite; }
 
-        /* Controles Móviles */
+        /* Controles Móviles (Botón EMP en esquina) */
         #mobile-controls {
             position: absolute;
-            bottom: 30px;
-            left: 0;
-            width: 100%;
-            pointer-events: none;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 30px;
-            box-sizing: border-box;
+            bottom: 20px;
+            right: 20px;
+            width: auto;
+            left: auto;
+            pointer-events: none; 
             z-index: 50;
         }
-        .m-zone { pointer-events: auto; }
-        .d-pad {
-            display: grid;
-            grid-template-columns: repeat(3, 60px);
-            grid-gap: 5px;
-        }
-        .m-btn {
-            background: rgba(0, 255, 255, 0.15);
-            border: 2px solid #0ff;
-            color: #0ff;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            height: 60px;
-            user-select: none;
-            touch-action: none;
-            box-shadow: inset 0 0 10px rgba(0,255,255,0.2);
-        }
-        .m-btn:active { background: rgba(0, 255, 255, 0.5); box-shadow: 0 0 15px #0ff; }
-        .action-btns { display: flex; gap: 15px; align-items: flex-end; }
-        
-        .btn-fire { 
-            width: 80px; height: 80px; border-radius: 50%; 
-            border-color: #f0f; color: #f0f; background: rgba(255, 0, 255, 0.15); 
-            font-size: 10px; box-shadow: inset 0 0 10px rgba(255,0,255,0.2);
-        }
-        .btn-fire:active { background: rgba(255, 0, 255, 0.5); box-shadow: 0 0 15px #f0f; }
         
         .btn-emp { 
-            width: 60px; height: 60px; border-radius: 50%; 
-            border-color: #ff0; color: #ff0; background: rgba(255, 255, 0, 0.15); 
-            font-size: 10px; box-shadow: inset 0 0 10px rgba(255,255,0,0.2);
+            pointer-events: auto; 
+            width: 70px; height: 70px; border-radius: 50%; 
+            border: 3px solid #ff0; color: #ff0; background: rgba(255, 255, 0, 0.2); 
+            font-size: 14px; box-shadow: inset 0 0 15px rgba(255,255,0,0.3);
+            display: flex; align-items: center; justify-content: center;
+            user-select: none; font-family: 'Press Start 2P', cursive;
         }
-        .btn-emp:active { background: rgba(255, 255, 0, 0.5); box-shadow: 0 0 15px #ff0; }
+        .btn-emp:active { background: rgba(255, 255, 0, 0.6); box-shadow: 0 0 25px #ff0; }
 
         @media (min-width: 1024px) {
             #mobile-controls { display: none !important; }
+        }
+
+        /* Ajustes responsivos */
+        @media (max-width: 600px) {
+            .title-glitch { font-size: 20px; }
+            .panel { padding: 20px; border-width: 2px; }
+            .hud-box { padding: 8px 10px; min-width: 120px; border-width: 2px; }
+            .start-btn { padding: 12px 20px; font-size: 12px; }
+            #ui-layer { font-size: 9px; top: 10px; left: 10px; right: 10px; }
+            .controls-desc { font-size: 9px !important; }
         }
 
     </style>
@@ -214,47 +192,42 @@
     <div id="ui-layer" class="hidden">
         <div class="ui-block hud-box border-cyan">
             <div class="cyan-text">SCORE: <span id="score" class="white-text">0</span></div>
-            <div id="combo-display" class="yellow-text" style="font-size: 10px; margin-top: 8px;"></div>
-            <div id="level-display" class="cyan-text" style="margin-top: 10px; font-size: 10px;">SECTOR: 1</div>
+            <div id="combo-display" class="yellow-text" style="font-size: 9px; margin-top: 8px;"></div>
+            <div id="level-display" class="cyan-text" style="margin-top: 10px; font-size: 9px;">SECTOR: 1</div>
         </div>
         <div class="ui-block" style="text-align: center; padding-top: 10px;">
-            <div id="warning-text" class="red-text blink hidden" style="font-size: 24px;">WARNING</div>
-            <div id="warp-text" class="cyan-text blink hidden" style="font-size: 24px;">WARP SPEED</div>
+            <div id="warning-text" class="red-text blink hidden" style="font-size: 16px;">WARNING</div>
+            <div id="warp-text" class="cyan-text blink hidden" style="font-size: 16px;">WARP SPEED</div>
         </div>
         <div class="ui-block hud-box border-green" style="text-align: right;">
             <div class="cyan-text">SHIELD: <span id="hp" class="white-text">100</span>%</div>
-            <div class="cyan-text" style="margin-top: 15px; font-size: 10px;">EMP (B): <span id="emp-count" class="white-text">3</span></div>
+            <div class="cyan-text" style="margin-top: 15px; font-size: 9px;">EMP (B): <span id="emp-count" class="white-text">3</span></div>
         </div>
     </div>
 
-    <!-- Controles para Celular -->
+    <!-- Controles Móviles (Solo botón EMP) -->
     <div id="mobile-controls" class="hidden">
-        <div class="m-zone d-pad">
-            <div></div><div class="m-btn" id="btn-up">▲</div><div></div>
-            <div class="m-btn" id="btn-left">◀</div><div class="m-btn" id="btn-down">▼</div><div class="m-btn" id="btn-right">▶</div>
-        </div>
-        <div class="m-zone action-btns">
-            <div class="m-btn btn-emp" id="btn-m-emp">EMP</div>
-            <div class="m-btn btn-fire" id="btn-m-fire">FIRE</div>
-        </div>
+        <div class="btn-emp" id="btn-m-emp">EMP</div>
     </div>
 
     <div id="start-screen">
+        <img id="bg-image" src="Gemini_Generated_Image_f00wd1f00wd1f00w.png" onerror="this.style.display='none'">
+        
         <div class="panel">
             <h1 class="title-glitch">VECTOR FIGHTER</h1>
-            <h2 class="cyan-text" style="font-size: 16px; margin-top: 0; margin-bottom: 30px; letter-spacing: 5px;">ARCADE OVERDRIVE</h2>
+            <h2 class="cyan-text" style="font-size: 14px; margin-top: 0; margin-bottom: 20px; letter-spacing: 3px;">EPIC OVERDRIVE</h2>
             
-            <div style="border: 2px dashed #0f0; padding: 25px; margin-bottom: 20px; background: rgba(0,255,0,0.05); text-align: left;">
-                <p style="font-size: 12px; margin: 0; line-height: 2.5; color: #fff;">
-                    <span class="yellow-text">WASD / D-PAD :</span> MOVERSE<br>
-                    <span class="yellow-text">SHIFT        :</span> ESQUIVAR<br>
-                    <span class="yellow-text">ESPACIO/FIRE :</span> DISPARAR<br>
-                    <span class="yellow-text">TECLA B/EMP  :</span> BOMBA EMP
+            <div style="border: 2px dashed #0f0; padding: 15px; margin-bottom: 20px; background: rgba(0,255,0,0.05); text-align: left;">
+                <p class="controls-desc" style="font-size: 12px; margin: 0; line-height: 2.2; color: #fff;">
+                    <span class="yellow-text">PC:</span> WASD (Mover), SHIFT (Esquivar)<br>
+                    <span class="yellow-text">PC:</span> ESPACIO (Disparar), B (Bomba EMP)<br>
+                    <span class="yellow-text">MÓVIL:</span> Arrastra el dedo para moverte.<br>
+                    <span class="yellow-text">MÓVIL:</span> ¡Disparo Automático activado!
                 </p>
             </div>
 
             <button class="start-btn blink" id="start-btn">INSERT COIN</button>
-            <p class="cyan-text" style="font-size: 14px; margin-top: 40px;">HI-SCORE: <span class="white-text" id="high-score-start">0</span></p>
+            <p class="cyan-text" style="font-size: 12px; margin-top: 20px;">HI-SCORE: <span class="white-text" id="high-score-start">0</span></p>
         </div>
     </div>
 
@@ -281,8 +254,10 @@
 
 <script>
 /**
- * PUNTUACIÓN (Guardado Local)
+ * DETECCIÓN DISPOSITIVO MÓVIL
  */
+const IS_MOBILE = ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
 const Meta = {
     highScore: parseInt(localStorage.getItem('vsr_highScore_arcade')) || 0,
     save(score) {
@@ -293,9 +268,6 @@ const Meta = {
     }
 };
 
-/**
- * SISTEMA DE VOZ
- */
 const VoiceSys = {
     speak: (text) => {
         if (!window.speechSynthesis) return;
@@ -307,36 +279,127 @@ const VoiceSys = {
 };
 
 /**
- * SISTEMA DE AUDIO (SFX y Música Procedural de Emergencia)
+ * SINTETIZADOR MUSICAL (CHIPTUNE ÉPICO)
+ * Secuencias más largas (64 pasos) para evitar monotonía.
  */
 const AudioSys = (function() {
-    let ctx = null, masterGain = null, isPlaying = false, time = 0;
-    
+    let ctx = null, masterGain = null, isPlaying = false;
+    let nextNoteTime = 0, step = 0, timerID;
+
+    // Frecuencias exactas
+    const C3=131, D3=147, Eb3=156, E3=165, F3=175, G3=196, Ab3=208, A3=220, Bb3=233, B3=247;
+    const C4=262, D4=294, Eb4=311, E4=330, F4=349, Fs4=370, G4=392, Ab4=415, A4=440, Bb4=466, B4=494;
+    const C5=523, D5=587, Eb5=622, E5=659, F5=698;
+
+    // -----------------------------------------------------
+    // MÚSICA NORMAL: Sinfonía N° 9 (Del Nuevo Mundo) - Dvořák
+    // Épico, marcado, pesado (100 BPM aprox)
+    const MELODY_NORMAL = [
+        E4, 0, G4, 0, E4, 0, E4, 0,  D4, 0, C4, 0, D4, 0, B3, 0,
+        E4, 0, G4, 0, A4, 0, G4, 0,  E4, 0, E4, 0, E4, 0,  0, 0,
+        E4, 0, G4, 0, E4, 0, E4, 0,  D4, 0, C4, 0, D4, 0, B3, 0,
+        E4, 0, D4, 0, C4, 0, B3, 0,  A3, 0, A3, 0, A3, 0,  0, 0
+    ];
+    // Bajo de marcha para Dvořák
+    const BASS_NORMAL = [
+        E3, 0, E3, 0, E3, 0, E3, 0,  D3, 0, D3, 0, D3, 0, G3, 0,
+        C3, 0, C3, 0, C3, 0, C3, 0,  E3, 0, E3, 0, E3, 0, E3, 0,
+        E3, 0, E3, 0, E3, 0, E3, 0,  D3, 0, D3, 0, D3, 0, G3, 0,
+        C3, 0, B3, 0, A3, 0, G3, 0,  A3, 0, A3, 0, A3, 0, A3, 0
+    ];
+
+    // -----------------------------------------------------
+    // MÚSICA DE JEFE: Arpegios Menores estilo Vivaldi/Castlevania
+    // Extremadamente rápido y tenso (150 BPM aprox)
+    const MELODY_BOSS = [
+        C4, Eb4, G4, C5, G4, Eb4, C4, Eb4,  C4, Eb4, G4, C5, G4, Eb4, C4, Eb4,
+        D4, F4, Ab4, D5, Ab4, F4, D4, F4,   D4, F4, Ab4, D5, Ab4, F4, D4, F4,
+        Eb4, G4, C5, Eb5, C5, G4, Eb4, G4,  Eb4, G4, C5, Eb5, C5, G4, Eb4, G4,
+        D4, F4, Ab4, D5, Ab4, F4, D4, B3,   D4, F4, Ab4, D5, Ab4, F4, D4, B3
+    ];
+    // Bajo pedal frenético
+    const BASS_BOSS = [
+        C3, 0, C3, 0, C3, 0, C3, 0,  C3, 0, C3, 0, C3, 0, C3, 0,
+        D3, 0, D3, 0, D3, 0, D3, 0,  D3, 0, D3, 0, D3, 0, D3, 0,
+        Eb3, 0, Eb3, 0, Eb3, 0, Eb3, 0,  Eb3, 0, Eb3, 0, Eb3, 0, Eb3, 0,
+        D3, 0, D3, 0, D3, 0, D3, 0,  G3, 0, G3, 0, G3, 0, G3, 0
+    ];
+
     function init() {
         if (ctx) return;
-        ctx = new (window.AudioContext || window.webkitAudioContext)();
-        masterGain = ctx.createGain(); masterGain.gain.value = 0.3; masterGain.connect(ctx.destination);
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        ctx = new AudioContext();
+        masterGain = ctx.createGain(); 
+        masterGain.gain.value = 0.2; 
+        masterGain.connect(ctx.destination);
     }
 
-    function playTone(freq, type, duration, vol, detune=0, slideTo=null) {
+    function playTone(freq, type, duration, vol, detune=0, slideTo=null, startTime=null) {
         if(!ctx) return;
+        let t = startTime !== null ? startTime : ctx.currentTime;
         const osc = ctx.createOscillator(), gain = ctx.createGain();
-        osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
-        if(slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, ctx.currentTime + duration);
-        osc.detune.value = detune; gain.gain.setValueAtTime(vol, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
-        osc.connect(gain); gain.connect(masterGain); osc.start(); osc.stop(ctx.currentTime + duration);
+        osc.type = type; osc.frequency.setValueAtTime(freq, t);
+        if(slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t + duration);
+        osc.detune.value = detune; gain.gain.setValueAtTime(vol, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + duration);
+        osc.connect(gain); gain.connect(masterGain); osc.start(t); osc.stop(t + duration);
     }
 
-    function noiseBurst(duration, vol) {
+    function noiseBurst(duration, vol, startTime=null) {
         if(!ctx) return;
+        let t = startTime !== null ? startTime : ctx.currentTime;
         const bSize = ctx.sampleRate * duration, buffer = ctx.createBuffer(1, bSize, ctx.sampleRate);
         const data = buffer.getChannelData(0); for(let i=0; i<bSize; i++) data[i] = Math.random()*2-1;
         const noise = ctx.createBufferSource(); noise.buffer = buffer;
         const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 800;
-        const gain = ctx.createGain(); gain.gain.setValueAtTime(vol, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
-        noise.connect(filter); filter.connect(gain); gain.connect(masterGain); noise.start();
+        const gain = ctx.createGain(); gain.gain.setValueAtTime(vol, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + duration);
+        noise.connect(filter); filter.connect(gain); gain.connect(masterGain); noise.start(t); noise.stop(t + duration);
+    }
+
+    function scheduler() {
+        while (nextNoteTime < ctx.currentTime + 0.1) {
+            playStep(nextNoteTime);
+            nextStep();
+        }
+        if (isPlaying) timerID = setTimeout(scheduler, 25);
+    }
+
+    function nextStep() {
+        const isBoss = Game.boss && Game.boss.active;
+        const isWarp = Game.warpTimer > 0;
+        
+        let secondsPerBeat = 0.15; // Ritmo marcha pesada (Dvořák)
+        if (isBoss) secondsPerBeat = 0.10; // Ritmo frenético (Jefe)
+        if (isWarp) secondsPerBeat = 0.06; // Modo Hyper-drive
+        
+        nextNoteTime += secondsPerBeat;
+        step++;
+    }
+
+    function playStep(time) {
+        const isBoss = Game.boss && Game.boss.active;
+        const seqLen = 64; // Secuencia larga
+        const currentStep = step % seqLen;
+
+        // Batería Electrónica Adaptada
+        if (currentStep % 8 === 0) playTone(120, 'sine', 0.15, 0.5, 0, 10, time); // Bombo/Kick
+        if (currentStep % 8 === 4) noiseBurst(0.08, 0.25, time);                  // Caja/Snare
+        if (currentStep % 2 === 1) noiseBurst(0.02, 0.05, time);                 // Hihat rápido
+
+        // Sintetizador Melódico (Square Wave)
+        let melody = isBoss ? MELODY_BOSS : MELODY_NORMAL;
+        let mFreq = melody[currentStep];
+        if (mFreq > 0) {
+            playTone(mFreq, 'square', isBoss ? 0.08 : 0.14, 0.15, 0, null, time);
+        }
+
+        // Sintetizador de Bajo (Sawtooth)
+        let bass = isBoss ? BASS_BOSS : BASS_NORMAL;
+        let bFreq = bass[currentStep];
+        if (bFreq > 0) {
+            playTone(bFreq, 'sawtooth', isBoss ? 0.10 : 0.18, 0.2, 0, null, time);
+        }
     }
 
     const sfx = {
@@ -352,159 +415,21 @@ const AudioSys = (function() {
         warp: () => { playTone(50, 'sine', 5.0, 1.0, 0, 1200); noiseBurst(5.0, 0.3); }
     };
 
-    function musicLoop() {
-        if(!isPlaying || !ctx) return;
-        const beat = time % 16;
-        const isBoss = Game.boss && Game.boss.active;
-        const isWarp = Game.warpTimer > 0;
-        
-        let tempo = isWarp ? 150 : 250; 
-        
-        if (beat % 8 === 0) {
-            playTone(isBoss ? 40 : (Game.level===2 ? 45 : 50), 'sine', 1.5, 0.5);
-            playTone(isBoss ? 40.5 : (Game.level===2 ? 45.5 : 50.5), 'triangle', 1.5, 0.3);
-        }
-        if (beat % 4 === 0) { noiseBurst(0.08, 0.15); }
-
-        const notesL1 = [220, 330, 440, 330];
-        const notesL2 = [200, 300, 360, 300];
-        const notesL3 = [150, 250, 350, 250];
-        const bossNotes = [150, 140, 130, 140];
-        
-        let notes = isBoss ? bossNotes : (Game.level===1?notesL1:(Game.level===2?notesL2:notesL3));
-        
-        if (beat % 2 === 0) {
-            let freq = notes[(beat/2) % notes.length];
-            playTone(freq, 'triangle', 0.8, 0.2);
-            playTone(freq * 1.01, 'sine', 0.8, 0.15);
-        }
-        time++; setTimeout(musicLoop, tempo);
-    }
-
-    return { init, sfx, startMusic: () => { isPlaying = true; musicLoop(); }, stopMusic: () => isPlaying = false };
+    return { 
+        init, sfx, 
+        startMusic: () => { 
+            if(isPlaying) return; 
+            isPlaying = true; 
+            if(ctx.state === 'suspended') ctx.resume();
+            nextNoteTime = ctx.currentTime + 0.05; 
+            scheduler(); 
+        }, 
+        stopMusic: () => { 
+            isPlaying = false; 
+            clearTimeout(timerID); 
+        } 
+    };
 })();
-
-/**
- * SISTEMA MIDI (NUEVO) - Usa Tone.js para reproducir archivos locales
- */
-const MidiSys = {
-    normalMidi: null, bossMidi: null,
-    currentPart: null, synths: [], gain: null,
-    currentType: null, loaded: false, fallback: false,
-
-    async load() {
-        if (this.loaded || this.fallback) return;
-        try {
-            // Inicializar ganancia master para la música
-            this.gain = new Tone.Gain(0).toDestination();
-            
-            // Creamos 4 sintetizadores de onda cuadrada/sierra para ese estilo retro
-            for(let i=0; i<4; i++) {
-                this.synths.push(new Tone.PolySynth(Tone.Synth, {
-                    oscillator: { type: i % 2 === 0 ? "square8" : "sawtooth" },
-                    envelope: { attack: 0.02, decay: 0.2, sustain: 0.2, release: 0.5 }
-                }).connect(this.gain));
-            }
-
-            // Descargamos y procesamos los MIDIs
-            const [res1, res2] = await Promise.all([
-                fetch('DEPECHE MODE.Photographic.mid'),
-                fetch('Depeche Mode - Black Celebration.mid')
-            ]);
-            
-            if (!res1.ok || !res2.ok) throw new Error("MIDI files not found locally");
-
-            const [buf1, buf2] = await Promise.all([res1.arrayBuffer(), res2.arrayBuffer()]);
-            this.normalMidi = new Midi(buf1);
-            this.bossMidi = new Midi(buf2);
-            this.loaded = true;
-
-        } catch(e) {
-            console.warn("MIDI Error (Local fetch failed). Using Procedural fallback.", e);
-            this.fallback = true;
-            AudioSys.init();
-        }
-    },
-
-    play(type) {
-        if (this.fallback) {
-            if (this.currentType === null) AudioSys.startMusic();
-            this.currentType = type;
-            return;
-        }
-
-        if (this.currentType === type || !this.loaded) return;
-        this.currentType = type;
-
-        const midi = type === 'boss' ? this.bossMidi : this.normalMidi;
-        if (!midi) return;
-
-        const startNew = () => {
-            if (this.currentPart) {
-                this.currentPart.dispose();
-                this.synths.forEach(s => s.releaseAll());
-            }
-            Tone.Transport.stop();
-            Tone.Transport.cancel(); // Limpia eventos
-
-            // Creamos la secuencia
-            this.currentPart = new Tone.Part((time, note) => {
-                const synth = this.synths[note.trackIndex % this.synths.length];
-                // Reducimos velocity general para no saturar
-                synth.triggerAttackRelease(note.name, note.duration, time, note.velocity * 0.4);
-            }, []).start(0);
-
-            // Poblar secuencia con las notas del MIDI
-            let activeTrackIdx = 0;
-            midi.tracks.forEach(track => {
-                if (track.notes.length > 0) {
-                    track.notes.forEach(note => {
-                        this.currentPart.add(note.time, { 
-                            name: note.name, duration: note.duration, 
-                            velocity: note.velocity, trackIndex: activeTrackIdx 
-                        });
-                    });
-                    activeTrackIdx++;
-                }
-            });
-
-            this.currentPart.loop = true; 
-            this.currentPart.loopEnd = midi.duration || 60;
-            Tone.Transport.start();
-
-            // Fade in suave
-            this.gain.gain.cancelScheduledValues(Tone.now());
-            this.gain.gain.setValueAtTime(0, Tone.now());
-            this.gain.gain.linearRampToValueAtTime(0.25, Tone.now() + 2); 
-        };
-
-        if (this.currentPart) {
-            // Fade out de lo actual
-            this.gain.gain.cancelScheduledValues(Tone.now());
-            this.gain.gain.linearRampToValueAtTime(0, Tone.now() + 1.5);
-            setTimeout(startNew, 1600);
-        } else {
-            startNew();
-        }
-    },
-
-    stop() {
-        this.currentType = null;
-        if (this.fallback) {
-            AudioSys.stopMusic();
-            return;
-        }
-        if (this.gain) {
-            this.gain.gain.cancelScheduledValues(Tone.now());
-            this.gain.gain.linearRampToValueAtTime(0, Tone.now() + 1.5);
-            setTimeout(() => {
-                if (this.currentPart) this.currentPart.dispose();
-                this.synths.forEach(s => s.releaseAll());
-                Tone.Transport.stop();
-            }, 1600);
-        }
-    }
-};
 
 
 /**
@@ -547,24 +472,43 @@ window.addEventListener('keyup', e => {
     if(e.code==='KeyB') keys.b = false;
 });
 
-// Controles Táctiles (Mobile)
-const bindTouch = (id, keyName) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
-    el.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
-    el.addEventListener('touchcancel', (e) => { e.preventDefault(); keys[keyName] = false; });
-};
+// Controles Táctiles (Arraste y Auto-Fire)
+let touchActive = false;
+let touchStartX = 0, touchStartY = 0;
 
-bindTouch('btn-up', 'w');
-bindTouch('btn-down', 's');
-bindTouch('btn-left', 'a');
-bindTouch('btn-right', 'd');
-bindTouch('btn-m-fire', 'space');
+window.addEventListener('touchstart', (e) => {
+    if (e.target.id === 'btn-m-emp') return; 
+    if (Game.state === 'PLAYING') {
+        touchActive = true;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }
+}, {passive: false});
+
+window.addEventListener('touchmove', (e) => {
+    if (Game.state === 'PLAYING' && touchActive) {
+        e.preventDefault(); 
+        let currentX = e.touches[0].clientX;
+        let currentY = e.touches[0].clientY;
+        let dx = currentX - touchStartX;
+        let dy = currentY - touchStartY;
+        
+        if (player) {
+            player.x += dx * 3.5;
+            player.y += dy * 3.5;
+        }
+        
+        touchStartX = currentX;
+        touchStartY = currentY;
+    }
+}, {passive: false});
+
+window.addEventListener('touchend', (e) => {
+    if (e.touches.length === 0) touchActive = false;
+});
+
 const empBtn = document.getElementById('btn-m-emp');
-if (empBtn) {
-    empBtn.addEventListener('touchstart', (e) => { e.preventDefault(); EMP.trigger(); });
-}
+if (empBtn) empBtn.addEventListener('touchstart', (e) => { e.preventDefault(); EMP.trigger(); });
 
 function project(x, y, z) {
     if (z <= -FOV) z = -FOV + 0.1;
@@ -614,64 +558,100 @@ const WarpTunnel = {
     }
 };
 
-const Env = {
-    left: [], right: [], top: [], bottom: [],
+// ENTORNO SUBTERRANEO CIBERNETICO PARA NIVEL 3
+const CaveSystem = {
+    rings: [], numPoints: 8, baseRadius: 600,
     init() {
-        this.left = []; this.right = []; this.top = []; this.bottom = [];
+        this.rings = [];
+        for (let z = 0; z <= Z_LIMIT; z += 150) {
+            this.rings.push(this.createRing(z));
+        }
+    },
+    createRing(z) {
+        let pts = [];
+        for (let i = 0; i < this.numPoints; i++) {
+            let angle = (i / this.numPoints) * Math.PI * 2;
+            let dist = this.baseRadius + (Math.random() * 200 - 100);
+            pts.push({ angle: angle, r: dist });
+        }
+        return { z: z, pts: pts };
+    },
+    updateAndDraw(ctx) {
+        this.rings.forEach(r => r.z -= SPEED);
+        if (this.rings[0].z < -FOV) {
+            this.rings.shift();
+            let lastZ = this.rings[this.rings.length - 1].z;
+            this.rings.push(this.createRing(lastZ + 150));
+        }
+
+        let color = (Game.boss && Game.boss.active) ? '#f00' : '#80f'; 
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = color;
+
+        for (let i = 0; i < this.rings.length; i++) {
+            let ring = this.rings[i];
+            if (ring.z < -FOV) continue;
+            
+            let curveX = Math.sin(frames * 0.02 + ring.z * 0.002) * 350;
+            let curveY = Math.cos(frames * 0.015 + ring.z * 0.002) * 250;
+
+            let projectedPoints = [];
+            
+            for (let j = 0; j < ring.pts.length; j++) {
+                let pt = ring.pts[j];
+                let px = curveX + Math.cos(pt.angle) * pt.r;
+                let py = curveY + Math.sin(pt.angle) * pt.r;
+                projectedPoints.push(project(px, py, ring.z));
+            }
+
+            ctx.beginPath();
+            for (let j = 0; j < projectedPoints.length; j++) {
+                let p = projectedPoints[j];
+                let nextP = projectedPoints[(j + 1) % projectedPoints.length];
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(nextP.x, nextP.y);
+            }
+            ctx.stroke();
+
+            if (i < this.rings.length - 1) {
+                let nextRing = this.rings[i + 1];
+                let nextCurveX = Math.sin(frames * 0.02 + nextRing.z * 0.002) * 350;
+                let nextCurveY = Math.cos(frames * 0.015 + nextRing.z * 0.002) * 250;
+                
+                ctx.beginPath();
+                for (let j = 0; j < ring.pts.length; j++) {
+                    let p = projectedPoints[j];
+                    let nextPt = nextRing.pts[j];
+                    let npx = nextCurveX + Math.cos(nextPt.angle) * nextPt.r;
+                    let npy = nextCurveY + Math.sin(nextPt.angle) * nextPt.r;
+                    let npProj = project(npx, npy, nextRing.z);
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(npProj.x, npProj.y);
+                }
+                ctx.stroke();
+            }
+        }
+        ctx.shadowBlur = 0;
+    }
+};
+
+const Env = {
+    left: [], right: [],
+    init() {
+        this.left = []; this.right = [];
         for(let i=0; i<20; i++) {
             this.left.push({ z: i*150, y: Math.random() * -300 - 100 });
             this.right.push({ z: i*150, y: Math.random() * -300 - 100 });
-            // Generación caverna (Nivel 3)
-            this.top.push({ z: i*150, offset: (Math.random()-0.5)*150 });
-            this.bottom.push({ z: i*150, offset: (Math.random()-0.5)*150 });
         }
     },
     updateAndDraw(ctx) {
-        // ---- ESTILOS SUBTERRANEOS (Nivel 3) ----
         if (Game.level >= 3) {
-            ctx.strokeStyle = (Game.boss && Game.boss.active) ? '#f00' : '#d0f';
-            ctx.lineWidth = 2;
-            
-            const drawDeepLine = (startX, startY, array, frequency) => {
-                ctx.beginPath();
-                let first = true;
-                for(let i=0; i<array.length; i++) {
-                    let point = array[i];
-                    if (!player.isDying) point.z -= SPEED;
-                    
-                    if (point.z < -FOV) {
-                        point.z += 20 * 150;
-                        point.offset = (Math.random()-0.5)*200;
-                    }
-                    if (point.z > -FOV) {
-                        let dynamicX = startX + point.offset;
-                        let dynamicY = startY + (Math.sin(frames * frequency + i) * 80);
-                        let p = project(dynamicX, dynamicY, point.z);
-                        if (first) { ctx.moveTo(p.x, p.y); first = false; }
-                        else { ctx.lineTo(p.x, p.y); }
-                    }
-                }
-                ctx.stroke();
-            };
-
-            // Techo de la caverna
-            drawDeepLine(-500, -500, this.top, 0.03);
-            drawDeepLine(0, -600, this.top, 0.04);
-            drawDeepLine(500, -500, this.top, 0.03);
-            
-            // Suelo de la caverna
-            drawDeepLine(-500, 300, this.bottom, 0.03);
-            drawDeepLine(0, 400, this.bottom, 0.05);
-            drawDeepLine(500, 300, this.bottom, 0.03);
-            
-            // Paredes
-            drawDeepLine(-800, -100, this.left, 0.02);
-            drawDeepLine(800, -100, this.right, 0.02);
-
-            return; // Terminar ejecución de escenario
+            CaveSystem.updateAndDraw(ctx); 
+            return;
         }
 
-        // ---- NIVELES 1 Y 2 ----
         let color = Game.level === 1 ? '#0a0' : '#0ff'; 
         if (Game.boss && Game.boss.active) color = '#a00';
         if (Game.warpTimer > 0) color = '#fff';
@@ -731,7 +711,7 @@ const Stars = {
     },
     updateAndDraw(ctx) {
         let color = '#fff';
-        if (Game.level >= 3) color = (frames % 10 < 5) ? '#f0f' : '#0ff'; // Neon cave dust
+        if (Game.level >= 3) color = (frames % 10 < 5) ? '#f0f' : '#0ff'; 
         if (Game.boss && Game.boss.active) color = '#faa';
 
         this.particles.forEach(s => {
@@ -825,13 +805,19 @@ class Player {
         this.vx *= fric; this.vy *= fric;
         this.vx = Math.max(-maxSpeed, Math.min(maxSpeed, this.vx));
         this.vy = Math.max(-maxSpeed, Math.min(maxSpeed, this.vy));
-        this.x += this.vx; this.y += this.vy;
+        
+        if (!IS_MOBILE) {
+            this.x += this.vx; this.y += this.vy;
+        }
 
         if (this.x < -600) this.x = -600; if (this.x > 600) this.x = 600;
         if (this.y > 100) this.y = 100; if (this.y < -500) this.y = -500;
 
         let fireRate = this.weaponLevel > 1 ? 5 : 8;
-        if (keys.space && frames - this.lastShot > fireRate) this.shoot();
+        
+        let shouldShoot = keys.space || IS_MOBILE;
+        
+        if (shouldShoot && frames - this.lastShot > fireRate) this.shoot();
     }
     shoot() {
         AudioSys.sfx.shoot();
@@ -937,7 +923,15 @@ class Enemy {
         if (player.isDying) return; 
         if (this.hitTimer > 0) this.hitTimer--;
         this.z -= SPEED * 1.1;
-        this.x += Math.sin(frames*0.05 + this.z)*8; this.y += Math.cos(frames*0.04)*4;
+        
+        if (Game.level >= 3) {
+            this.x += Math.sin(frames*0.1 + this.z)*12;
+            this.y += Math.cos(frames*0.08)*12;
+        } else {
+            this.x += Math.sin(frames*0.05 + this.z)*8; 
+            this.y += Math.cos(frames*0.04)*4;
+        }
+
         if (this.z < -FOV) this.active = false;
 
         for (let b of Game.bullets) {
@@ -1338,6 +1332,8 @@ function update() {
             nextBossScore = score + (4000 * Game.level); 
             document.getElementById('level-display').innerText = `SECTOR: ${Game.level}`;
             VoiceSys.speak("Entering Sector " + Game.level);
+            
+            if (Game.level === 3) CaveSystem.init();
         }
 
         if (Game.warpTimer === 0) {
@@ -1365,7 +1361,6 @@ function update() {
             
             Game.entities.forEach(e => createParticles(e.x, e.y, e.z, '#fff', 5));
             Game.entities = [];
-            MidiSys.play('boss'); // REPRODUCCIÓN MIDI JEFE
         }
     } else if (Game.boss && Game.boss.active) {
         if (Game.boss.isDying) {
@@ -1379,7 +1374,6 @@ function update() {
             
             if (Game.bossDeathTimer <= 0) {
                 Game.boss.active = false;
-                MidiSys.play('normal'); // REGRESO MIDI NORMAL
                 
                 if (Game.level >= 3) {
                     Game.flashAlpha = 1.0;
@@ -1463,12 +1457,12 @@ function startGame() {
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('ui-layer').classList.remove('hidden');
 
-    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+    if (IS_MOBILE) {
         document.getElementById('mobile-controls').classList.remove('hidden');
     }
     
     AudioSys.init(); 
-    MidiSys.play('normal'); // INICIA LA MÚSICA MIDI
+    AudioSys.startMusic();
     
     VoiceSys.speak("System Online. Entering Sector 1.");
     
@@ -1489,7 +1483,7 @@ function startGame() {
 
 function endGame(victory = false) {
     Game.state = victory ? 'VICTORY' : 'GAMEOVER';
-    MidiSys.stop(); // DETIENE MIDI
+    AudioSys.stopMusic();
     Meta.save(score);
 
     document.getElementById('ui-layer').classList.add('hidden');
@@ -1508,23 +1502,7 @@ function endGame(victory = false) {
 
 document.getElementById('high-score-start').innerText = Meta.highScore;
 
-// Precarga y arranque seguro interactivo
-document.getElementById('start-btn').addEventListener('click', async function() {
-    const btn = this;
-    btn.innerText = "LOADING SYSTEM...";
-    btn.disabled = true;
-    
-    try {
-        await Tone.start();
-        await MidiSys.load();
-    } catch(e) {
-        console.warn("Precarga de audio con fallos menores. Arrancando en modo Fallback.");
-    }
-    
-    btn.innerText = "INSERT COIN";
-    btn.disabled = false;
-    startGame();
-});
+document.getElementById('start-btn').addEventListener('click', startGame);
 
 </script>
 </body>
